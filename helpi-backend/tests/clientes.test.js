@@ -10,6 +10,7 @@ describe("Testes do CRUD de Clientes (/api/clientes)", () => {
             .post('/api/clientes')
             .send({
                 nome: "João da Silva",
+                cpf: "11122233344", // <-- Adicionámos o CPF aqui!
                 email: emailUnico,
                 senha: "senha_segura_123",
                 telefone: "11999998888"
