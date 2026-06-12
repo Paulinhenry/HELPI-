@@ -7,4 +7,4 @@ describe("Testes Básicos da API", () => {
         expect(res.statusCode).toEqual(200);
         expect(res.body).toHaveProperty('message');
     });
-});
+})
