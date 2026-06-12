@@ -18,7 +18,7 @@ app.post('/api/clientes', async (req, res) => {
         res.status(201).json({ mensagem: "Cliente registado com sucesso!", cliente: novoCliente.rows[0] });
     } catch (erro) {
         if (erro.code === '23505') return res.status(400).json({ erro: "Este e-mail já está em uso na plataforma." });
-        res.status(500).json({ erro: "Erro interno ao registar o cliente." });
+        res.status(500).json({ erro: "Erro interno", detalhes: erro.message });
     }
 });
 

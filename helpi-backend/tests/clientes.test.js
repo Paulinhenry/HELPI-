@@ -14,6 +14,7 @@ describe("Testes do CRUD de Clientes (/api/clientes)", () => {
                 senha: "senha_segura_123",
                 telefone: "11999998888"
             });
+        console.log("🚨 O ERRO DO BANCO FOI:", res.body);
 
         expect(res.statusCode).toEqual(201);
         expect(res.body).toHaveProperty('mensagem');
