@@ -10,10 +10,10 @@ app.get('/api/status', (req, res) => {
 
 app.post('/api/clientes', async (req, res) => {
     try {
-        const { nome, email, senha, telefone } = req.body;
+        const { nome, cpf, email, senha, telefone } = req.body;
         const novoCliente = await pool.query(
-            'INSERT INTO clientes (nome, email, senha, telefone) VALUES ($1, $2, $3, $4) RETURNING id, nome, email, telefone, criado_em',
-            [nome, email, senha, telefone]
+            'INSERT INTO clientes (nome, cpf, email, senha, telefone) VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, cpf, email, telefone, criado_em',
+            [nome, cpf, email, senha, telefone]
         );
         res.status(201).json({ mensagem: "Cliente registado com sucesso!", cliente: novoCliente.rows[0] });
     } catch (erro) {
