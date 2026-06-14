@@ -153,10 +153,61 @@ app.post('/api/chamados', async (req, res, next) => {
             [cliente_id, categoria_solicitada, problema_descricao, latitude_destino, longitude_destino]
         );
 
+        const io = req.app.get('io');
+
+        if (io) {
+            io.emit('novo_chamado_emergencia', {
+                mensagem: `🚨 URGENTE: Precisamos de um ${categoria_solicitada} a menos de 10km!`,
+                chamado_id: novoChamado.rows[0].id
+            });
+        }
+        
+
         res.status(201).json({
             mensagem: "Chamado criado com sucesso! A notificar profissionais próximos...",
             chamado: novoChamado.rows[0],
             profissionais_notificados: busca.rows.length // Mostra a quantos profissionais o alerta vai tocar
+        });
+
+    } catch (erro) {
+        next(erro);
+    }
+});
+
+// 5. Profissional aceita o chamado de emergência
+app.put('/api/chamados/:id/aceitar', async (req, res, next) => {
+    try {
+        const { id } = req.params; // O ID do pedido de emergência
+        const { profissional_id } = req.body; // O ID do profissional que clicou em "Aceitar"
+
+        // 1. Verificamos se o pedido ainda está disponível
+        const verChamado = await pool.query('SELECT status FROM chamados_express WHERE id = $1', [id]);
+        
+        if (verChamado.rows.length === 0) {
+            return res.status(404).json({ erro: "Pedido de emergência não encontrado." });
+        }
+        
+        // Se outro eletricista foi mais rápido a clicar, bloqueamos a ação
+        if (verChamado.rows[0].status !== 'procurando_profissional') {
+            return res.status(400).json({ 
+                erro: "Que pena! Outro profissional já aceitou este pedido ou o cliente cancelou." 
+            });
+        }
+
+        // 2. O pedido é dele! Atualizamos o status e marcamos a hora exata da aceitação
+        const atualizacao = await pool.query(
+            `UPDATE chamados_express 
+             SET profissional_id = $1, 
+                 status = 'a_caminho', 
+                 aceite_em = CURRENT_TIMESTAMP 
+             WHERE id = $2 
+             RETURNING id, status, aceite_em`,
+            [profissional_id, id]
+        );
+
+        res.json({
+            mensagem: "Serviço aceite com sucesso! O cliente já sabe que estás a caminho.",
+            chamado: atualizacao.rows[0]
         });
 
     } catch (erro) {
