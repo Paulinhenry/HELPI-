@@ -2,6 +2,7 @@ const express = require('express');
 const pool = require('./config/database');
 const { errorHandler } = require('./middlewares/errorHandler');
 const { validarCadastroCliente } = require('./middlewares/validators/clienteValidator');
+const bcrypt = require('bcrypt'); // Adicionado pelo Victor
 
 const app = express();
 
@@ -18,18 +19,18 @@ app.get('/api/status', (req, res) => {
 // MÓDULO DE CLIENTES
 // -------------------------------------------------------
 
-// O validarCadastroCliente roda ANTES da lógica da rota.
-// Se a validação falhar, nem chega ao banco.
 app.post('/api/clientes', validarCadastroCliente, async (req, res, next) => {
     try {
         const { nome, cpf, email, senha, telefone } = req.body;
-
-        // Nota: A password ainda está em texto limpo — o teu sócio vai injetar o bcrypt aqui.
+        
+        // CÓDIGO DO VICTOR: Encriptação de senha ativada! 🔒
+        const senhaHash = await bcrypt.hash(senha, 10); 
+        
         const novoCliente = await pool.query(
             `INSERT INTO clientes (nome, cpf, email, senha, telefone)
              VALUES ($1, $2, $3, $4, $5)
              RETURNING id, nome, cpf, email, telefone, criado_em`,
-            [nome, cpf, email, senha, telefone]
+            [nome, cpf, email, senhaHash, telefone] // Usando a senha encriptada do Victor
         );
 
         res.status(201).json({
@@ -37,7 +38,6 @@ app.post('/api/clientes', validarCadastroCliente, async (req, res, next) => {
             cliente: novoCliente.rows[0],
         });
     } catch (erro) {
-        // Envia o erro diretamente para o errorHandler centralizado
         next(erro);
     }
 });
@@ -90,7 +90,6 @@ app.post('/api/profissionais', async (req, res, next) => {
     try {
         const { nome, cpf_cnpj, email, senha, telefone, categoria, biografia } = req.body;
 
-        // Insere usando os campos exatos mapeados na base de dados (cpf_cnpj e categoria)
         const novoProfissional = await pool.query(
             `INSERT INTO profissionais 
             (nome, cpf_cnpj, email, senha, telefone, categoria, biografia) 
@@ -104,7 +103,6 @@ app.post('/api/profissionais', async (req, res, next) => {
             profissional: novoProfissional.rows[0]
         });
     } catch (erro) {
-        // Deixa o errorHandler central lidar com CPFs ou E-mails duplicados
         next(erro);
     }
 });
@@ -116,10 +114,8 @@ app.post('/api/profissionais', async (req, res, next) => {
 // 4. Criar um Chamado Express (O cliente pede socorro)
 app.post('/api/chamados', async (req, res, next) => {
     try {
-        // Recebemos a localização do cliente e o problema
         const { cliente_id, categoria_solicitada, problema_descricao, latitude_destino, longitude_destino } = req.body;
 
-        // A MÁGICA: Fórmula de Haversine no PostgreSQL para achar quem está num raio de 10km
         const queryProfissionaisProximos = `
             SELECT id, nome, 
             (6371 * acos(
@@ -133,18 +129,15 @@ app.post('/api/chamados', async (req, res, next) => {
               AND latitude_atual IS NOT NULL
         `;
 
-        // Executamos a procura por profissionais próximos
         const busca = await pool.query(`SELECT * FROM (${queryProfissionaisProximos}) AS subset WHERE distancia_km <= 10 ORDER BY distancia_km ASC LIMIT 5`, 
         [latitude_destino, longitude_destino, categoria_solicitada]);
 
-        // Se a lista estiver vazia, não há ninguém na região
         if (busca.rows.length === 0) {
             return res.status(404).json({ 
                 erro: `Pedimos desculpa! Não há nenhum ${categoria_solicitada} disponível num raio de 10km neste exato momento.` 
             });
         }
 
-        // Se encontrou profissionais, criamos o chamado no banco (ainda sem profissional associado, à espera que alguém aceite)
         const novoChamado = await pool.query(
             `INSERT INTO chamados_express 
             (cliente_id, categoria_solicitada, problema_descricao, latitude_destino, longitude_destino, status) 
@@ -162,11 +155,10 @@ app.post('/api/chamados', async (req, res, next) => {
             });
         }
         
-
         res.status(201).json({
             mensagem: "Chamado criado com sucesso! A notificar profissionais próximos...",
             chamado: novoChamado.rows[0],
-            profissionais_notificados: busca.rows.length // Mostra a quantos profissionais o alerta vai tocar
+            profissionais_notificados: busca.rows.length 
         });
 
     } catch (erro) {
@@ -177,24 +169,21 @@ app.post('/api/chamados', async (req, res, next) => {
 // 5. Profissional aceita o chamado de emergência
 app.put('/api/chamados/:id/aceitar', async (req, res, next) => {
     try {
-        const { id } = req.params; // O ID do pedido de emergência
-        const { profissional_id } = req.body; // O ID do profissional que clicou em "Aceitar"
+        const { id } = req.params; 
+        const { profissional_id } = req.body; 
 
-        // 1. Verificamos se o pedido ainda está disponível
         const verChamado = await pool.query('SELECT status FROM chamados_express WHERE id = $1', [id]);
         
         if (verChamado.rows.length === 0) {
             return res.status(404).json({ erro: "Pedido de emergência não encontrado." });
         }
         
-        // Se outro eletricista foi mais rápido a clicar, bloqueamos a ação
         if (verChamado.rows[0].status !== 'procurando_profissional') {
             return res.status(400).json({ 
                 erro: "Que pena! Outro profissional já aceitou este pedido ou o cliente cancelou." 
             });
         }
 
-        // 2. O pedido é dele! Atualizamos o status e marcamos a hora exata da aceitação
         const atualizacao = await pool.query(
             `UPDATE chamados_express 
              SET profissional_id = $1, 
