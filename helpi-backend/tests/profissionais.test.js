@@ -54,7 +54,7 @@ describe('Testes de Registo de Profissionais (/api/profissionais)', () => {
 
         expect(res.statusCode).toEqual(409);
         expect(res.body).toHaveProperty('erro');
-        expect(res.body.erro).toContain('já está registado na plataforma');
+        expect(res.body.erro).toContain('cadastrado');
     });
 
     afterAll(async () => {
