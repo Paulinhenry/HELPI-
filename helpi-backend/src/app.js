@@ -109,6 +109,61 @@ app.post('/api/profissionais', async (req, res, next) => {
     }
 });
 
+// ==========================================
+// MÓDULO ON-DEMAND (ESTILO UBER)
+// ==========================================
+
+// 4. Criar um Chamado Express (O cliente pede socorro)
+app.post('/api/chamados', async (req, res, next) => {
+    try {
+        // Recebemos a localização do cliente e o problema
+        const { cliente_id, categoria_solicitada, problema_descricao, latitude_destino, longitude_destino } = req.body;
+
+        // A MÁGICA: Fórmula de Haversine no PostgreSQL para achar quem está num raio de 10km
+        const queryProfissionaisProximos = `
+            SELECT id, nome, 
+            (6371 * acos(
+                cos(radians($1)) * cos(radians(latitude_atual)) * cos(radians(longitude_atual) - radians($2)) + 
+                sin(radians($1)) * sin(radians(latitude_atual))
+            )) AS distancia_km
+            FROM profissionais
+            WHERE is_online = true 
+              AND categoria = $3 
+              AND status = 'aprovado'
+              AND latitude_atual IS NOT NULL
+        `;
+
+        // Executamos a procura por profissionais próximos
+        const busca = await pool.query(`SELECT * FROM (${queryProfissionaisProximos}) AS subset WHERE distancia_km <= 10 ORDER BY distancia_km ASC LIMIT 5`, 
+        [latitude_destino, longitude_destino, categoria_solicitada]);
+
+        // Se a lista estiver vazia, não há ninguém na região
+        if (busca.rows.length === 0) {
+            return res.status(404).json({ 
+                erro: `Pedimos desculpa! Não há nenhum ${categoria_solicitada} disponível num raio de 10km neste exato momento.` 
+            });
+        }
+
+        // Se encontrou profissionais, criamos o chamado no banco (ainda sem profissional associado, à espera que alguém aceite)
+        const novoChamado = await pool.query(
+            `INSERT INTO chamados_express 
+            (cliente_id, categoria_solicitada, problema_descricao, latitude_destino, longitude_destino, status) 
+            VALUES ($1, $2, $3, $4, $5, 'procurando_profissional') 
+            RETURNING id, status, criado_em`,
+            [cliente_id, categoria_solicitada, problema_descricao, latitude_destino, longitude_destino]
+        );
+
+        res.status(201).json({
+            mensagem: "Chamado criado com sucesso! A notificar profissionais próximos...",
+            chamado: novoChamado.rows[0],
+            profissionais_notificados: busca.rows.length // Mostra a quantos profissionais o alerta vai tocar
+        });
+
+    } catch (erro) {
+        next(erro);
+    }
+});
+
 // -------------------------------------------------------
 // MIDDLEWARE DE ERROS — deve ser O ÚLTIMO app.use()
 // -------------------------------------------------------
