@@ -1,51 +1,37 @@
 const express = require('express');
-const pool = require('./config/database');
-const { errorHandler } = require('./middlewares/errorHandler');
-const { validarCadastroCliente } = require('./middlewares/validators/clienteValidator');
-const bcrypt = require('bcrypt'); // Adicionado pelo Victor
+const morgan = require('morgan');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpecs = require('./config/swagger');
+const logger = require('./utils/logger');
+const { errorHandler } = require('./middlewares/errorHandler');
+
+// Importação das Rotas
+const rotasClientes = require('./routes/clientes.routes');
+const rotasProfissionais = require('./routes/profissionais.routes');
+const rotasChamados = require('./routes/chamados.routes');
+const rotasAvaliacoes = require('./routes/avaliacoes.routes');
 
 const app = express();
 
+// Middlewares Globais
 app.use(express.json());
+app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
 
-// Uso de controladores e rotas organizados
-//--------------------------------------------
-//clientes
-const rotasClientes = require('./routes/clientes.routes');
-
-app.use('/api/clientes', rotasClientes); // Diz ao Express para usar o novo ficheiro
-
-//profissionais
-const rotasProfissionais = require('./routes/profissionais.routes');
-
-app.use('/api/profissionais', rotasProfissionais);
-
-//chamados
-const rotasChamados = require('./routes/chamados.routes');
-
-app.use('/api/chamados', rotasChamados);
-
-//avaliações
-const rotasAvaliacoes = require('./routes/avaliacoes.routes');
-
-app.use('/api/avaliacoes', rotasAvaliacoes);
-
-// Documentação Swagger
+// Documentação
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
-//--------------------------------------------
-// -------------------------------------------------------
-// STATUS DA API
-// -------------------------------------------------------
+// Rotas
+app.use('/api/clientes', rotasClientes);
+app.use('/api/profissionais', rotasProfissionais);
+app.use('/api/chamados', rotasChamados);
+app.use('/api/avaliacoes', rotasAvaliacoes);
+
+//status API
 app.get('/api/status', (req, res) => {
     res.json({ message: 'Motor do Helpi a funcionar perfeitamente!' });
 });
 
-// -------------------------------------------------------
-// MIDDLEWARE DE ERROS — deve ser O ÚLTIMO app.use()
-// -------------------------------------------------------
+// Middleware de Erros (sempre no final)
 app.use(errorHandler);
 
 module.exports = app;
