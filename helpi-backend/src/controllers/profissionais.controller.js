@@ -1,7 +1,12 @@
 const pool = require('../config/database');
+const bcrypt = require('bcrypt');
 
-// 1. Listar profissionais aprovados (com filtro opcional de categoria)
-const listarProfissionais = async (req, res, next) => {
+// -------------------------------------------------------
+// MÓDULO DE PROFISSIONAIS (CATÁLOGO & REGISTO)
+// -------------------------------------------------------
+
+// 1. Listar profissionais aprovados (com filtro opcional de categoria via Query: ?categoria=X)
+app.get('/api/profissionais', async (req, res, next) => {
     try {
         const { categoria } = req.query; 
 
@@ -18,10 +23,10 @@ const listarProfissionais = async (req, res, next) => {
     } catch (erro) {
         next(erro);
     }
-};
+});
 
-// 2. Ver o perfil detalhado de um profissional por ID
-const verProfissional = async (req, res, next) => {
+// 2. Ver o perfil detalhado de um profissional específico por ID
+app.get('/api/profissionais/:id', async (req, res, next) => {
     try {
         const { id } = req.params;
         const resultado = await pool.query(
@@ -37,19 +42,21 @@ const verProfissional = async (req, res, next) => {
     } catch (erro) {
         next(erro);
     }
-};
+});
 
-// 3. Registar um novo profissional
-const registarProfissional = async (req, res, next) => {
+// 3. Registar um novo profissional na plataforma
+app.post('/api/profissionais', async (req, res, next) => {
     try {
         const { nome, cpf_cnpj, email, senha, telefone, categoria, biografia } = req.body;
+        
+        const senhaHash = await bcrypt.hash(senha, 10);
 
         const novoProfissional = await pool.query(
             `INSERT INTO profissionais 
             (nome, cpf_cnpj, email, senha, telefone, categoria, biografia) 
             VALUES ($1, $2, $3, $4, $5, $6, $7) 
             RETURNING id, nome, categoria, status, criado_em`,
-            [nome, cpf_cnpj, email, senha, telefone, categoria, biografia]
+            [nome, cpf_cnpj, email, senhaHash, telefone, categoria, biografia]
         );
 
         res.status(201).json({
@@ -59,11 +66,4 @@ const registarProfissional = async (req, res, next) => {
     } catch (erro) {
         next(erro);
     }
-};
-
-// Exportamos as 3 funções para as rotas poderem usá-las
-module.exports = {
-    listarProfissionais,
-    verProfissional,
-    registarProfissional
-};
+});
