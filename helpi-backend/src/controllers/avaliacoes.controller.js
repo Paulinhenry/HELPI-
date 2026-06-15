@@ -39,20 +39,15 @@ const criarAvaliacao = async (req, res, next) => {
             'SELECT AVG(nota) as media_notas FROM avaliacoes WHERE profissional_id = $1',
             [profissional_id]
         );
-        
-        const novaMedia = parseFloat(media.rows[0].media_notas).toFixed(1); 
+        const novaMedia = parseFloat(media.rows[0].media_notas).toFixed(1);
 
-        await pool.query(
-            'UPDATE profissionais SET avaliacao = $1 WHERE id = $2',
-            [novaMedia, profissional_id]
-        );
+        await pool.query('UPDATE profissionais SET avaliacao = $1 WHERE id = $2', [novaMedia, profissional_id]);
 
         res.status(201).json({
-            mensagem: "Avaliação registada com sucesso!",
+            mensagem: "Avaliação registada com sucesso! Obrigado pelo feedback.",
             avaliacao: novaAvaliacao.rows[0],
             nova_media_profissional: novaMedia
         });
-
     } catch (erro) {
         next(erro);
     }
