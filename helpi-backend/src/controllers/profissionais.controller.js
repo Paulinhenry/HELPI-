@@ -1,17 +1,11 @@
 const pool = require('../config/database');
 const bcrypt = require('bcrypt');
 
-// -------------------------------------------------------
-// MÓDULO DE PROFISSIONAIS (CATÁLOGO & REGISTO)
-// -------------------------------------------------------
-
-// 1. Listar profissionais aprovados (com filtro opcional de categoria via Query: ?categoria=X)
-app.get('/api/profissionais', async (req, res, next) => {
+const listarProfissionais = async (req, res, next) => {
     try {
-        const { categoria } = req.query; 
-
+        const { categoria } = req.query;
         let query = 'SELECT id, nome, categoria, biografia, taxa_visita, avaliacao FROM profissionais WHERE status = $1';
-        const valores = ['aprovado']; 
+        const valores = ['aprovado'];
 
         if (categoria) {
             query += ' AND categoria = $2';
@@ -23,10 +17,9 @@ app.get('/api/profissionais', async (req, res, next) => {
     } catch (erro) {
         next(erro);
     }
-});
+};
 
-// 2. Ver o perfil detalhado de um profissional específico por ID
-app.get('/api/profissionais/:id', async (req, res, next) => {
+const verProfissional = async (req, res, next) => {
     try {
         const { id } = req.params;
         const resultado = await pool.query(
@@ -42,13 +35,11 @@ app.get('/api/profissionais/:id', async (req, res, next) => {
     } catch (erro) {
         next(erro);
     }
-});
+};
 
-// 3. Registar um novo profissional na plataforma
-app.post('/api/profissionais', async (req, res, next) => {
+const registarProfissional = async (req, res, next) => {
     try {
         const { nome, cpf_cnpj, email, senha, telefone, categoria, biografia } = req.body;
-        
         const senhaHash = await bcrypt.hash(senha, 10);
 
         const novoProfissional = await pool.query(
@@ -66,4 +57,6 @@ app.post('/api/profissionais', async (req, res, next) => {
     } catch (erro) {
         next(erro);
     }
-});
+};
+
+module.exports = { listarProfissionais, verProfissional, registarProfissional };
