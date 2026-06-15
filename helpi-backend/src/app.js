@@ -8,38 +8,19 @@ const app = express();
 
 app.use(express.json());
 
+// Uso de controladores e rotas organizados
+//--------------------------------------------
+const rotasClientes = require('./routes/clientes.routes');
+
+app.use('/api/clientes', rotasClientes); // Diz ao Express para usar o novo ficheiro
+
+
+//--------------------------------------------
 // -------------------------------------------------------
 // STATUS DA API
 // -------------------------------------------------------
 app.get('/api/status', (req, res) => {
     res.json({ message: 'Motor do Helpi a funcionar perfeitamente!' });
-});
-
-// -------------------------------------------------------
-// MÓDULO DE CLIENTES
-// -------------------------------------------------------
-
-app.post('/api/clientes', validarCadastroCliente, async (req, res, next) => {
-    try {
-        const { nome, cpf, email, senha, telefone } = req.body;
-        
-        // CÓDIGO DO VICTOR: Encriptação de senha ativada! 🔒
-        const senhaHash = await bcrypt.hash(senha, 10); 
-        
-        const novoCliente = await pool.query(
-            `INSERT INTO clientes (nome, cpf, email, senha, telefone)
-             VALUES ($1, $2, $3, $4, $5)
-             RETURNING id, nome, cpf, email, telefone, criado_em`,
-            [nome, cpf, email, senhaHash, telefone] // Usando a senha encriptada do Victor
-        );
-
-        res.status(201).json({
-            mensagem: 'Cliente registado com sucesso!',
-            cliente: novoCliente.rows[0],
-        });
-    } catch (erro) {
-        next(erro);
-    }
 });
 
 // -------------------------------------------------------
@@ -118,19 +99,21 @@ app.post('/api/chamados', async (req, res, next) => {
 
         const queryProfissionaisProximos = `
             SELECT id, nome, 
-            (6371 * acos(
-                cos(radians($1)) * cos(radians(latitude_atual)) * cos(radians(longitude_atual) - radians($2)) + 
-                sin(radians($1)) * sin(radians(latitude_atual))
-            )) AS distancia_km
+                   -- Calcula a distância exata em KM
+                   (ST_Distance(coordenadas, ST_SetSRID(ST_MakePoint($2, $1), 4326)) / 1000) AS distancia_km
             FROM profissionais
             WHERE is_online = true 
               AND categoria = $3 
               AND status = 'aprovado'
-              AND latitude_atual IS NOT NULL
+              -- O FILTRO: ST_DWithin usa o índice GiST para achar instantaneamente quem está num raio de 10.000 metros (10km)
+              AND ST_DWithin(coordenadas, ST_SetSRID(ST_MakePoint($2, $1), 4326), 10000)
+            -- A ORDENAÇÃO: O operador <-> é a ordenação espacial nativa e ultra-rápida do PostgreSQL
+            ORDER BY coordenadas <-> ST_SetSRID(ST_MakePoint($2, $1), 4326)
+            LIMIT 5
         `;
 
-        const busca = await pool.query(`SELECT * FROM (${queryProfissionaisProximos}) AS subset WHERE distancia_km <= 10 ORDER BY distancia_km ASC LIMIT 5`, 
-        [latitude_destino, longitude_destino, categoria_solicitada]);
+        // Executamos a procura passando: 1=Latitude, 2=Longitude, 3=Categoria
+        const busca = await pool.query(queryProfissionaisProximos, [latitude_destino, longitude_destino, categoria_solicitada]);
 
         if (busca.rows.length === 0) {
             return res.status(404).json({ 
