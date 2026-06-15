@@ -3,7 +3,9 @@ const pool = require('./config/database');
 const { errorHandler } = require('./middlewares/errorHandler');
 const { validarCadastroCliente } = require('./middlewares/validators/clienteValidator');
 const bcrypt = require('bcrypt'); // Adicionado pelo Victor
-
+const { gerarToken } = require('./utils/jwt'); 
+const authCliente = require('./middlewares/authCliente');
+const authProfissional = require('./middlewares/authProfissional');     
 const app = express();
 
 app.use(express.json());
@@ -114,9 +116,16 @@ app.post('/api/profissionais', async (req, res, next) => {
 // ==========================================
 
 // 4. Criar um Chamado Express (O cliente pede socorro)
-app.post('/api/chamados', async (req, res, next) => {
+app.post('/api/chamados', authCliente, async (req, res, next) => {
     try {
-        const { cliente_id, categoria_solicitada, problema_descricao, latitude_destino, longitude_destino } = req.body;
+        const {
+    categoria_solicitada,
+    problema_descricao,
+    latitude_destino,
+    longitude_destino
+    } = req.body;
+
+    const cliente_id = req.usuario.id;
 
         const queryProfissionaisProximos = `
             SELECT id, nome, 
@@ -169,10 +178,10 @@ app.post('/api/chamados', async (req, res, next) => {
 });
 
 // 5. Profissional aceita o chamado de emergência
-app.put('/api/chamados/:id/aceitar', async (req, res, next) => {
+app.put('/api/chamados/:id/aceitar', authProfissional, async (req, res, next) => {  
     try {
         const { id } = req.params; 
-        const { profissional_id } = req.body; 
+        const profissional_id = req.usuario.id; 
 
         const verChamado = await pool.query('SELECT status FROM chamados_express WHERE id = $1', [id]);
         
@@ -207,10 +216,10 @@ app.put('/api/chamados/:id/aceitar', async (req, res, next) => {
 });
 
 // 6. Profissional avisa que chegou ao local
-app.put('/api/chamados/:id/chegada', async (req, res, next) => {
+app.put('/api/chamados/:id/chegada', authProfissional, async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { profissional_id } = req.body; 
+        const profissional_id = req.usuario.id;
 
         const verChamado = await pool.query('SELECT status, profissional_id FROM chamados_express WHERE id = $1', [id]);
         
@@ -258,10 +267,10 @@ app.put('/api/chamados/:id/chegada', async (req, res, next) => {
 });
 
 // 7. Profissional finaliza o serviço
-app.put('/api/chamados/:id/finalizar', async (req, res, next) => {
+app.put('/api/chamados/:id/finalizar', authProfissional, async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { profissional_id } = req.body; 
+        const profissional_id = req.usuario.id;
 
         const verChamado = await pool.query('SELECT status, profissional_id FROM chamados_express WHERE id = $1', [id]);
         
@@ -312,9 +321,10 @@ app.put('/api/chamados/:id/finalizar', async (req, res, next) => {
 // ==========================================
 
 // 8. Cliente avalia um serviço finalizado
-app.post('/api/avaliacoes', async (req, res, next) => {
+app.post('/api/avaliacoes', authCliente, async (req, res, next) => {
     try {
         const { chamado_id, nota, comentario } = req.body;
+        const clienteLogadoId = req.usuario.id;
 
         // 1. Validação de segurança básica
         if (!nota || nota < 1 || nota > 5) {
@@ -331,12 +341,19 @@ app.post('/api/avaliacoes', async (req, res, next) => {
             return res.status(404).json({ erro: "Pedido de serviço não encontrado." });
         }
 
+        const clienteDoChamado = verChamado.rows[0].cliente_id;
+
+        if (clienteLogadoId !== clienteDoChamado) {
+          return res.status(403).json({
+        erro: "Você não pode avaliar um serviço que não é seu."});
+        }
+
         // Não deixamos o cliente avaliar um eletricista que ainda está a caminho!
         if (verChamado.rows[0].status !== 'finalizado') {
             return res.status(400).json({ erro: "Só é possível avaliar serviços que já foram finalizados." });
         }
 
-        const { cliente_id, profissional_id } = verChamado.rows[0];
+        const profissional_id = verChamado.rows[0].profissional_id;
 
         // 3. Verificamos se o cliente já avaliou este serviço antes
         const jaAvaliado = await pool.query('SELECT id FROM avaliacoes WHERE chamado_id = $1', [chamado_id]);
@@ -349,7 +366,7 @@ app.post('/api/avaliacoes', async (req, res, next) => {
             `INSERT INTO avaliacoes (chamado_id, cliente_id, profissional_id, nota, comentario) 
              VALUES ($1, $2, $3, $4, $5) 
              RETURNING id, nota, comentario, criado_em`,
-            [chamado_id, cliente_id, profissional_id, nota, comentario]
+            [chamado_id, clienteLogadoId, profissional_id, nota, comentario]
         );
 
         // 5. A MAGIA: Recalcula a média global do profissional usando SQL puro e rápido
@@ -381,6 +398,110 @@ app.post('/api/avaliacoes', async (req, res, next) => {
 // -------------------------------------------------------
 // MIDDLEWARE DE ERROS — deve ser O ÚLTIMO app.use()
 // -------------------------------------------------------
-app.use(errorHandler);
+app.post('/api/login/clientes', async (req, res, next) => {
+    try {
+        const { email, senha } = req.body;
 
+        const resultado = await pool.query(
+            'SELECT id, nome, email, senha FROM clientes WHERE email = $1',
+            [email]
+        );
+
+        if (resultado.rows.length === 0) {
+            return res.status(401).json({
+                erro: 'Email ou senha inválidos'
+            });
+        }
+
+        const cliente = resultado.rows[0];
+
+        const senhaValida = await bcrypt.compare(
+            senha,
+            cliente.senha
+        );
+
+        if (!senhaValida) {
+            return res.status(401).json({
+                erro: 'Email ou senha inválidos'
+            });
+        }
+
+        const token = gerarToken(
+            cliente.id,
+            'cliente'
+        );
+
+        res.json({
+            mensagem: 'Login realizado com sucesso',
+            token,
+            usuario: {
+                id: cliente.id,
+                nome: cliente.nome,
+                email: cliente.email,
+                tipo: 'cliente'
+            }
+        });
+
+    } catch (erro) {
+        next(erro);
+    }
+});
+
+app.get('/api/teste-jwt', authCliente, (req, res) => {
+    res.json({
+        mensagem: 'Token válido!',
+        usuario: req.usuario
+    });
+});
+
+app.post('/api/login/profissionais', async (req, res, next) => {
+    try {
+        const { email, senha } = req.body;
+
+        const resultado = await pool.query(
+            'SELECT id, nome, email, senha FROM profissionais WHERE email = $1',
+            [email]
+        );
+
+        if (resultado.rows.length === 0) {
+            return res.status(401).json({
+                erro: 'Email ou senha inválidos'
+            });
+        }
+
+        const profissional = resultado.rows[0];
+
+        const senhaValida = await bcrypt.compare(
+            senha,
+            profissional.senha
+        );
+
+        if (!senhaValida) {
+            return res.status(401).json({
+                erro: 'Email ou senha inválidos'
+            });
+        }
+
+        const token = gerarToken(
+            profissional.id,
+            'profissional'
+        );
+
+        res.json({
+            mensagem: 'Login realizado com sucesso',
+            token,
+            usuario: {
+                id: profissional.id,
+                nome: profissional.nome,
+                email: profissional.email,
+                tipo: 'profissional'
+            }
+        });
+
+    } catch (erro) {
+        next(erro);
+    }
+});
+
+app.use(errorHandler);
 module.exports = app;
