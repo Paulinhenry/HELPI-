@@ -89,13 +89,15 @@ app.get('/api/profissionais/:id', async (req, res, next) => {
 app.post('/api/profissionais', async (req, res, next) => {
     try {
         const { nome, cpf_cnpj, email, senha, telefone, categoria, biografia } = req.body;
+        
+        const senhaHash = await bcrypt.hash(senha, 10);
 
         const novoProfissional = await pool.query(
             `INSERT INTO profissionais 
             (nome, cpf_cnpj, email, senha, telefone, categoria, biografia) 
             VALUES ($1, $2, $3, $4, $5, $6, $7) 
             RETURNING id, nome, categoria, status, criado_em`,
-            [nome, cpf_cnpj, email, senha, telefone, categoria, biografia]
+            [nome, cpf_cnpj, email, senhaHash, telefone, categoria, biografia]
         );
 
         res.status(201).json({
