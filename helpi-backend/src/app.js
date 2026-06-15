@@ -10,12 +10,12 @@ const rotasClientes = require('./routes/clientes.routes');
 const rotasProfissionais = require('./routes/profissionais.routes');
 const rotasChamados = require('./routes/chamados.routes');
 const rotasAvaliacoes = require('./routes/avaliacoes.routes');
+const rotasAuth = require('./routes/auth.routes'); // Novo módulo de autenticação
 
-const { validarCadastroCliente } = require('./middlewares/validators/clienteValidator');
-const bcrypt = require('bcrypt'); // Adicionado pelo Victor
-const { gerarToken } = require('./utils/jwt'); 
+// Middlewares de Autenticação para uso futuro direto nas rotas protegidas
 const authCliente = require('./middlewares/authCliente');
 const authProfissional = require('./middlewares/authProfissional');     
+
 const app = express();
 
 // Middlewares Globais
@@ -25,73 +25,19 @@ app.use(morgan('combined', { stream: { write: (message) => logger.info(message.t
 // Documentação
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
-// Rotas
+// Ativação das Rotas
+app.use('/api', rotasAuth); // Define a base /api para as rotas de login (/api/login/...)
 app.use('/api/clientes', rotasClientes);
 app.use('/api/profissionais', rotasProfissionais);
 app.use('/api/chamados', rotasChamados);
 app.use('/api/avaliacoes', rotasAvaliacoes);
 
-//status API
+// Status da API
 app.get('/api/status', (req, res) => {
     res.json({ message: 'Motor do Helpi a funcionar perfeitamente!' });
 });
 
-
-
-
-
-// -------------------------------------------------------
-// MIDDLEWARE DE ERROS — deve ser O ÚLTIMO app.use()
-// -------------------------------------------------------
-app.post('/api/login/clientes', async (req, res, next) => {
-    try {
-        const { email, senha } = req.body;
-
-        const resultado = await pool.query(
-            'SELECT id, nome, email, senha FROM clientes WHERE email = $1',
-            [email]
-        );
-
-        if (resultado.rows.length === 0) {
-            return res.status(401).json({
-                erro: 'Email ou senha inválidos'
-            });
-        }
-
-        const cliente = resultado.rows[0];
-
-        const senhaValida = await bcrypt.compare(
-            senha,
-            cliente.senha
-        );
-
-        if (!senhaValida) {
-            return res.status(401).json({
-                erro: 'Email ou senha inválidos'
-            });
-        }
-
-        const token = gerarToken(
-            cliente.id,
-            'cliente'
-        );
-
-        res.json({
-            mensagem: 'Login realizado com sucesso',
-            token,
-            usuario: {
-                id: cliente.id,
-                nome: cliente.nome,
-                email: cliente.email,
-                tipo: 'cliente'
-            }
-        });
-
-    } catch (erro) {
-        next(erro);
-    }
-});
-
+// Rota de teste para validação do JWT
 app.get('/api/teste-jwt', authCliente, (req, res) => {
     res.json({
         mensagem: 'Token válido!',
@@ -99,54 +45,7 @@ app.get('/api/teste-jwt', authCliente, (req, res) => {
     });
 });
 
-app.post('/api/login/profissionais', async (req, res, next) => {
-    try {
-        const { email, senha } = req.body;
-
-        const resultado = await pool.query(
-            'SELECT id, nome, email, senha FROM profissionais WHERE email = $1',
-            [email]
-        );
-
-        if (resultado.rows.length === 0) {
-            return res.status(401).json({
-                erro: 'Email ou senha inválidos'
-            });
-        }
-
-        const profissional = resultado.rows[0];
-
-        const senhaValida = await bcrypt.compare(
-            senha,
-            profissional.senha
-        );
-
-        if (!senhaValida) {
-            return res.status(401).json({
-                erro: 'Email ou senha inválidos'
-            });
-        }
-
-        const token = gerarToken(
-            profissional.id,
-            'profissional'
-        );
-
-        res.json({
-            mensagem: 'Login realizado com sucesso',
-            token,
-            usuario: {
-                id: profissional.id,
-                nome: profissional.nome,
-                email: profissional.email,
-                tipo: 'profissional'
-            }
-        });
-
-    } catch (erro) {
-        next(erro);
-    }
-});
-
+// Middleware de Erros Centralizado (Sempre o último)
 app.use(errorHandler);
+
 module.exports = app;

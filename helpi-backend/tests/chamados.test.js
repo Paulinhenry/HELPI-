@@ -1,11 +1,16 @@
 const request = require('supertest');
 const app = require('../src/app');
 const pool = require('../src/config/database');
+const { gerarToken } = require('../src/utils/jwt'); // <-- IMPORTAÇÃO NOVA
 
 describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
+    let chamadoId;
     let clienteTesteId;
     let profissionalTesteId;
-    let chamadoId; // Variável global para guardar o ID do pedido durante a "viagem"
+    
+    // Novas variáveis para guardar os "crachás" de acesso
+    let tokenCliente;
+    let tokenProfissional;
 
     beforeAll(async () => {
         // 1. Limpeza de segurança
@@ -28,6 +33,8 @@ describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
             VALUES ('Eletricista Paulista', '99999999999999', 'eletricista.gps@helpi.com', 'senha123', '11988887777', 'Eletricista', 'aprovado', true, -23.561414, -46.655881)
             RETURNING id
         `);
+        tokenCliente = gerarToken(clienteTesteId, 'cliente');
+        tokenProfissional = gerarToken(profissionalTesteId, 'profissional');
         profissionalTesteId = profRes.rows[0].id;
     });
 
@@ -35,6 +42,7 @@ describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
     it('1. Deve encontrar o eletricista e criar o chamado', async () => {
         const res = await request(app)
             .post('/api/chamados')
+            .set('Authorization', `Bearer ${tokenCliente}`)
             .send({
                 cliente_id: clienteTesteId,
                 categoria_solicitada: 'Eletricista',
@@ -54,6 +62,7 @@ describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
     it('2. Profissional deve aceitar o serviço e ficar a caminho', async () => {
         const res = await request(app)
             .put(`/api/chamados/${chamadoId}/aceitar`)
+            .set('Authorization', `Bearer ${tokenProfissional}`)
             .send({ profissional_id: profissionalTesteId });
 
         expect(res.statusCode).toEqual(200);
@@ -64,6 +73,7 @@ describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
     it('3. Profissional avisa que chegou ao local', async () => {
         const res = await request(app)
             .put(`/api/chamados/${chamadoId}/chegada`)
+            .set('Authorization', `Bearer ${tokenProfissional}`)
             .send({ profissional_id: profissionalTesteId });
 
         expect(res.statusCode).toEqual(200);
@@ -74,6 +84,7 @@ describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
     it('4. Profissional finaliza o serviço com sucesso', async () => {
         const res = await request(app)
             .put(`/api/chamados/${chamadoId}/finalizar`)
+            .set('Authorization', `Bearer ${tokenProfissional}`)
             .send({ profissional_id: profissionalTesteId });
 
         expect(res.statusCode).toEqual(200);
