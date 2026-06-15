@@ -1,6 +1,14 @@
+// =============================================================
+// HELPI - Rotas de Profissionais
+// GET  /api/profissionais      → Listar profissionais aprovados
+// GET  /api/profissionais/:id  → Ver perfil de um profissional
+// POST /api/profissionais      → Registar novo profissional
+// =============================================================
+
 const express = require('express');
 const router = express.Router();
 const profissionaisController = require('../controllers/profissionais.controller');
+const { validarCadastroProfissional } = require('../middlewares/validators/profissionalValidator');
 
 /**
  * @openapi
@@ -14,10 +22,10 @@ const profissionaisController = require('../controllers/profissionais.controller
  *         name: categoria
  *         schema:
  *           type: string
- *         description: Filtrar profissionais por categoria
+ *         description: Filtrar profissionais por categoria (ex. Eletricista)
  *     responses:
  *       '200':
- *         description: Lista de profissionais
+ *         description: Lista de profissionais aprovados (ordenados por avaliação)
  *
  *   post:
  *     summary: Registrar novo profissional
@@ -39,32 +47,34 @@ const profissionaisController = require('../controllers/profissionais.controller
  *             properties:
  *               nome:
  *                 type: string
- *                 example: João Silva
+ *                 example: "João Silva"
  *               cpf_cnpj:
  *                 type: string
  *                 example: "12345678901"
  *               email:
  *                 type: string
  *                 format: email
- *                 example: joao@email.com
+ *                 example: "joao@email.com"
  *               senha:
  *                 type: string
  *                 format: password
- *                 example: "123456"
+ *                 example: "minhasenha123"
  *               telefone:
  *                 type: string
  *                 example: "(44) 99999-9999"
  *               categoria:
  *                 type: string
- *                 example: Eletricista
+ *                 example: "Eletricista"
  *               biografia:
  *                 type: string
- *                 example: Profissional com 10 anos de experiência.
+ *                 example: "Profissional com 10 anos de experiência."
  *     responses:
  *       '201':
- *         description: Profissional registrado com sucesso
+ *         description: Profissional registrado com sucesso (aguardando aprovação)
  *       '400':
  *         description: Erro de validação
+ *       '409':
+ *         description: E-mail ou CPF/CNPJ já cadastrado
  *
  * /api/profissionais/{id}:
  *   get:
@@ -77,38 +87,17 @@ const profissionaisController = require('../controllers/profissionais.controller
  *         required: true
  *         schema:
  *           type: string
+ *           format: uuid
  *         description: ID do profissional
  *     responses:
  *       '200':
  *         description: Dados do profissional
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id:
- *                   type: string
- *                   example: "64b7c8e2a5f4d9"
- *                 nome:
- *                   type: string
- *                   example: João Silva
- *                 categoria:
- *                   type: string
- *                   example: Eletricista
- *                 biografia:
- *                   type: string
- *                   example: Profissional com 10 anos de experiência.
- *                 telefone:
- *                   type: string
- *                   example: "(44) 99999-9999"
- *                 email:
- *                   type: string
- *                   example: joao@email.com
  *       '404':
  *         description: Profissional não encontrado
  */
+
 router.get('/', profissionaisController.listarProfissionais);
 router.get('/:id', profissionaisController.verProfissional);
-router.post('/', profissionaisController.registarProfissional);
+router.post('/', validarCadastroProfissional, profissionaisController.registarProfissional);
 
 module.exports = router;

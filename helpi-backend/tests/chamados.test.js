@@ -1,19 +1,20 @@
 const request = require('supertest');
 const app = require('../src/app');
 const pool = require('../src/config/database');
-const { gerarToken } = require('../src/utils/jwt'); // <-- IMPORTAÇÃO NOVA
+const { gerarToken } = require('../src/utils/jwt');
 
 describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
     let chamadoId;
     let clienteTesteId;
     let profissionalTesteId;
     
-    // Novas variáveis para guardar os "crachás" de acesso
+    // Variáveis para guardar os "crachás" de acesso
     let tokenCliente;
     let tokenProfissional;
 
     beforeAll(async () => {
         // 1. Limpeza de segurança
+        await pool.query("DELETE FROM avaliacoes WHERE comentario LIKE '[TESTE]%'");
         await pool.query("DELETE FROM chamados_express WHERE problema_descricao LIKE '[TESTE]%'");
         await pool.query("DELETE FROM profissionais WHERE email = 'eletricista.gps@helpi.com'");
         await pool.query("DELETE FROM clientes WHERE email = 'cliente.gps@helpi.com'");
@@ -33,9 +34,12 @@ describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
             VALUES ('Eletricista Paulista', '99999999999999', 'eletricista.gps@helpi.com', 'senha123', '11988887777', 'Eletricista', 'aprovado', true, -23.561414, -46.655881)
             RETURNING id
         `);
+
+        // FIX: Atribuir o ID ANTES de gerar o token (estava invertido — token recebia undefined)
+        profissionalTesteId = profRes.rows[0].id;
+
         tokenCliente = gerarToken(clienteTesteId, 'cliente');
         tokenProfissional = gerarToken(profissionalTesteId, 'profissional');
-        profissionalTesteId = profRes.rows[0].id;
     });
 
     // --- PASSO 1: CLIENTE CHAMA ---
@@ -54,7 +58,7 @@ describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
         expect(res.statusCode).toEqual(201);
         expect(res.body.chamado.status).toBe('procurando_profissional');
         
-        // Magia: Guardamos o ID do chamado gerado para o eletricista usar nos próximos passos!
+        // Guardamos o ID do chamado gerado para o eletricista usar nos próximos passos
         chamadoId = res.body.chamado.id;
     });
 
@@ -91,16 +95,13 @@ describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
         expect(res.body.chamado.status).toBe('finalizado');
     });
 
-    afterAll(async () => {
-        await pool.end();
-    });
-
     // --- PASSO 5: CLIENTE AVALIA O SERVIÇO ---
     it('5. Cliente avalia o serviço e a média do profissional é atualizada', async () => {
         const res = await request(app)
             .post('/api/avaliacoes')
+            .set('Authorization', `Bearer ${tokenCliente}`)
             .send({
-                chamado_id: chamadoId, // Usa o mesmo ID do serviço que acabámos de finalizar
+                chamado_id: chamadoId,
                 nota: 5,
                 comentario: '[TESTE] Excelente profissional, muito rápido!'
             });
@@ -117,6 +118,7 @@ describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
     it('6. Deve bloquear tentativa de avaliar o mesmo serviço duas vezes', async () => {
         const res = await request(app)
             .post('/api/avaliacoes')
+            .set('Authorization', `Bearer ${tokenCliente}`)
             .send({
                 chamado_id: chamadoId,
                 nota: 3,
@@ -126,5 +128,11 @@ describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
         expect(res.statusCode).toEqual(409); // 409 significa Conflito
         expect(res.body.erro).toContain('já foi avaliado');
     });
+
+    // FIX: afterAll movido para o FINAL do describe (estava antes dos testes 5 e 6)
+    afterAll(async () => {
+        await pool.end();
+    });
 });
+
 

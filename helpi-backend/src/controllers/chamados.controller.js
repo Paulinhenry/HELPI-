@@ -1,9 +1,16 @@
+// =============================================================
+// HELPI - Controlador de Chamados Express (On-Demand)
+// Gerencia o ciclo de vida: criar → aceitar → chegar → finalizar
+// =============================================================
+
 const pool = require('../config/database');
+const logger = require('../utils/logger');
 
 const criarChamado = async (req, res, next) => {
     try {
+        // SEGURANÇA: Usa o ID do token JWT (não do body) para garantir identidade
+        const cliente_id = req.usuario.id;
         const {
-            cliente_id,
             categoria_solicitada,
             problema_descricao,
             latitude_destino,
@@ -50,6 +57,8 @@ const criarChamado = async (req, res, next) => {
             });
         }
 
+        logger.info(`Chamado criado: ${novoChamado.rows[0].id} por cliente ${cliente_id}`);
+
         res.status(201).json({
             mensagem: "Chamado criado com sucesso! A notificar profissionais próximos...",
             chamado: novoChamado.rows[0],
@@ -63,7 +72,8 @@ const criarChamado = async (req, res, next) => {
 const aceitarChamado = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { profissional_id } = req.body;
+        // SEGURANÇA: Usa o ID do token JWT
+        const profissional_id = req.usuario.id;
 
         const verChamado = await pool.query('SELECT status FROM chamados_express WHERE id = $1', [id]);
 
@@ -97,6 +107,8 @@ const aceitarChamado = async (req, res, next) => {
             });
         }
 
+        logger.info(`Chamado ${id} aceito pelo profissional ${profissional_id}`);
+
         res.json({
             mensagem: "Chamado aceito com sucesso!",
             chamado: atualizacao.rows[0]
@@ -109,7 +121,8 @@ const aceitarChamado = async (req, res, next) => {
 const registrarChegada = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { profissional_id } = req.body;
+        // SEGURANÇA: Usa o ID do token JWT
+        const profissional_id = req.usuario.id;
 
         const verChamado = await pool.query('SELECT status, profissional_id FROM chamados_express WHERE id = $1', [id]);
 
@@ -144,6 +157,8 @@ const registrarChegada = async (req, res, next) => {
             });
         }
 
+        logger.info(`Profissional ${profissional_id} chegou ao local do chamado ${id}`);
+
         res.json({
             mensagem: "Chegada registrada com sucesso! O cliente foi notificado.",
             chamado: atualizacao.rows[0]
@@ -156,7 +171,8 @@ const registrarChegada = async (req, res, next) => {
 const finalizarChamado = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { profissional_id } = req.body;
+        // SEGURANÇA: Usa o ID do token JWT
+        const profissional_id = req.usuario.id;
 
         const verChamado = await pool.query('SELECT status, profissional_id FROM chamados_express WHERE id = $1', [id]);
 
@@ -190,6 +206,8 @@ const finalizarChamado = async (req, res, next) => {
                 mensagem: "Serviço concluído! Por favor, avalie o profissional."
             });
         }
+
+        logger.info(`Chamado ${id} finalizado pelo profissional ${profissional_id}`);
 
         res.json({
             mensagem: "Serviço finalizado com sucesso! Bom trabalho.",
