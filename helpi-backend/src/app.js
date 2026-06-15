@@ -1,6 +1,16 @@
 const express = require('express');
-const pool = require('./config/database');
+const morgan = require('morgan');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpecs = require('./config/swagger');
+const logger = require('./utils/logger');
 const { errorHandler } = require('./middlewares/errorHandler');
+
+// Importação das Rotas
+const rotasClientes = require('./routes/clientes.routes');
+const rotasProfissionais = require('./routes/profissionais.routes');
+const rotasChamados = require('./routes/chamados.routes');
+const rotasAvaliacoes = require('./routes/avaliacoes.routes');
+
 const { validarCadastroCliente } = require('./middlewares/validators/clienteValidator');
 const bcrypt = require('bcrypt'); // Adicionado pelo Victor
 const { gerarToken } = require('./utils/jwt'); 
@@ -8,8 +18,12 @@ const authCliente = require('./middlewares/authCliente');
 const authProfissional = require('./middlewares/authProfissional');     
 const app = express();
 
+// Middlewares Globais
 app.use(express.json());
+app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
 
+// Documentação
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 // -------------------------------------------------------
 // STATUS DA API
 // -------------------------------------------------------
@@ -195,16 +209,19 @@ app.put('/api/chamados/:id/aceitar', authProfissional, async (req, res, next) =>
             });
         }
 
-        const atualizacao = await pool.query(
-            `UPDATE chamados_express 
-             SET profissional_id = $1, 
-                 status = 'a_caminho', 
-                 aceite_em = CURRENT_TIMESTAMP 
-             WHERE id = $2 
-             RETURNING id, status, aceite_em`,
-            [profissional_id, id]
-        );
+// Rotas
+app.use('/api/clientes', rotasClientes);
+app.use('/api/profissionais', rotasProfissionais);
+app.use('/api/chamados', rotasChamados);
+app.use('/api/avaliacoes', rotasAvaliacoes);
 
+//status API
+app.get('/api/status', (req, res) => {
+    res.json({ message: 'Motor do Helpi a funcionar perfeitamente!' });
+});
+
+// Middleware de Erros (sempre no final)
+app.use(errorHandler);
         res.json({
             mensagem: "Serviço aceite com sucesso! O cliente já sabe que estás a caminho.",
             chamado: atualizacao.rows[0]
