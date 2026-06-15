@@ -204,6 +204,57 @@ app.put('/api/chamados/:id/aceitar', async (req, res, next) => {
     }
 });
 
+// 6. Profissional avisa que chegou ao local
+app.put('/api/chamados/:id/chegada', async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { profissional_id } = req.body; 
+
+        const verChamado = await pool.query('SELECT status, profissional_id FROM chamados_express WHERE id = $1', [id]);
+        
+        if (verChamado.rows.length === 0) {
+            return res.status(404).json({ erro: "Pedido de emergência não encontrado." });
+        }
+        
+        // Segurança: Garante que apenas o profissional que aceitou o pedido pode dizer que chegou
+        if (verChamado.rows[0].profissional_id !== profissional_id) {
+            return res.status(403).json({ erro: "Você não tem permissão para alterar este pedido." });
+        }
+
+        if (verChamado.rows[0].status !== 'a_caminho') {
+            return res.status(400).json({ erro: "O pedido precisa estar 'a_caminho' para registrar a chegada." });
+        }
+
+        const atualizacao = await pool.query(
+            `UPDATE chamados_express 
+             SET status = 'em_servico', 
+                 chegou_ao_local_em = CURRENT_TIMESTAMP 
+             WHERE id = $1 
+             RETURNING id, status, chegou_ao_local_em, cliente_id`,
+            [id]
+        );
+
+        // Dispara o WebSocket para o telemóvel do cliente atualizar a tela instantaneamente
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('atualizacao_chamado', {
+                chamado_id: id,
+                cliente_id: atualizacao.rows[0].cliente_id,
+                status_novo: 'em_servico',
+                mensagem: "O profissional chegou ao local!"
+            });
+        }
+
+        res.json({
+            mensagem: "Chegada registrada com sucesso! O cliente foi notificado.",
+            chamado: atualizacao.rows[0]
+        });
+
+    } catch (erro) {
+        next(erro);
+    }
+});
+
 // -------------------------------------------------------
 // MIDDLEWARE DE ERROS — deve ser O ÚLTIMO app.use()
 // -------------------------------------------------------
