@@ -4,6 +4,8 @@
 // espalhados dentro de cada rota com try/catch repetido.
 // =============================================================
 
+const logger = require('../utils/logger');
+
 // Mapa de códigos de erro do PostgreSQL para mensagens amigáveis
 const PG_ERRORS = {
     '23505': { status: 409, mensagem: 'Este e-mail ou CPF já está cadastrado na plataforma.' },
@@ -42,12 +44,18 @@ const errorHandler = (err, req, res, next) => {
 
     // --- Erro desconhecido (bug real) ---
     // Em produção, não expõe detalhes internos
-    console.error('💥 ERRO NÃO TRATADO:', err);
+    logger.error('💥 ERRO NÃO TRATADO:', { 
+        message: err.message, 
+        stack: err.stack,
+        url: req.originalUrl,
+        method: req.method
+    });
 
     const isProd = process.env.NODE_ENV === 'production';
     return res.status(500).json({
         erro: 'Erro interno do servidor.',
-        ...(isProd ? {} : { detalhes: err.message, stack: err.stack }),
+        // Em desenvolvimento, o front-end ainda recebe o erro para te ajudar a debugar
+        ...(isProd ? {} : { detalhes: err.message }),
     });
 };
 
