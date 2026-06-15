@@ -83,4 +83,37 @@ describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
     afterAll(async () => {
         await pool.end();
     });
+
+    // --- PASSO 5: CLIENTE AVALIA O SERVIÇO ---
+    it('5. Cliente avalia o serviço e a média do profissional é atualizada', async () => {
+        const res = await request(app)
+            .post('/api/avaliacoes')
+            .send({
+                chamado_id: chamadoId, // Usa o mesmo ID do serviço que acabámos de finalizar
+                nota: 5,
+                comentario: '[TESTE] Excelente profissional, muito rápido!'
+            });
+
+        expect(res.statusCode).toEqual(201);
+        expect(res.body.avaliacao.nota).toBe(5);
+        expect(res.body).toHaveProperty('nova_media_profissional');
+        
+        // Garante que o cálculo da média funcionou perfeitamente
+        expect(Number(res.body.nova_media_profissional)).toBe(5.0); 
+    });
+
+    // --- PASSO 6: TENTA AVALIAR DUAS VEZES (SEGURANÇA) ---
+    it('6. Deve bloquear tentativa de avaliar o mesmo serviço duas vezes', async () => {
+        const res = await request(app)
+            .post('/api/avaliacoes')
+            .send({
+                chamado_id: chamadoId,
+                nota: 3,
+                comentario: '[TESTE] Tentar dar uma segunda nota para baixar a média.'
+            });
+
+        expect(res.statusCode).toEqual(409); // 409 significa Conflito
+        expect(res.body.erro).toContain('já foi avaliado');
+    });
 });
+
