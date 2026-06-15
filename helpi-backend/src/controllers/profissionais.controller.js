@@ -1,5 +1,13 @@
+// =============================================================
+// HELPI - Controlador de Profissionais
+// Gerencia registo, listagem e perfil de profissionais.
+// =============================================================
+
 const pool = require('../config/database');
 const bcrypt = require('bcrypt');
+const logger = require('../utils/logger');
+
+const SALT_ROUNDS = 12;
 
 const listarProfissionais = async (req, res, next) => {
     try {
@@ -11,6 +19,8 @@ const listarProfissionais = async (req, res, next) => {
             query += ' AND categoria = $2';
             valores.push(categoria);
         }
+
+        query += ' ORDER BY avaliacao DESC';
 
         const resultado = await pool.query(query, valores);
         res.json(resultado.rows);
@@ -40,15 +50,17 @@ const verProfissional = async (req, res, next) => {
 const registarProfissional = async (req, res, next) => {
     try {
         const { nome, cpf_cnpj, email, senha, telefone, categoria, biografia } = req.body;
-        const senhaHash = await bcrypt.hash(senha, 10);
+        const senhaHash = await bcrypt.hash(senha, SALT_ROUNDS);
 
         const novoProfissional = await pool.query(
             `INSERT INTO profissionais 
             (nome, cpf_cnpj, email, senha, telefone, categoria, biografia) 
             VALUES ($1, $2, $3, $4, $5, $6, $7) 
             RETURNING id, nome, categoria, status, criado_em`,
-            [nome, cpf_cnpj, email, senhaHash, telefone, categoria, biografia]
+            [nome, cpf_cnpj, email.toLowerCase().trim(), senhaHash, telefone, categoria, biografia]
         );
+
+        logger.info(`Novo profissional registado: ${novoProfissional.rows[0].id} (${categoria})`);
 
         res.status(201).json({
             mensagem: "Profissional registado com sucesso! Aguardando aprovação.",
