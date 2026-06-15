@@ -33,5 +33,5 @@ const PORT = process.env.PORT || 3000;
 
 // 5. ATENÇÃO: Agora quem faz o 'listen' é o servidorHttp e não o app
 servidorHttp.listen(PORT, () => {
-    console.log(`🚀 Motor Helpi a rodar na porta ${PORT} com WebSockets ativos!`);
+    console.log(`🚀 Motor Helpi a rodar na porta ${PORT} com WebSockets ativos! acesse: http://localhost:3000/api-docs`);
 });

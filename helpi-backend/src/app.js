@@ -3,6 +3,8 @@ const pool = require('./config/database');
 const { errorHandler } = require('./middlewares/errorHandler');
 const { validarCadastroCliente } = require('./middlewares/validators/clienteValidator');
 const bcrypt = require('bcrypt'); // Adicionado pelo Victor
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpecs = require('./config/swagger');
 
 const app = express();
 
@@ -29,6 +31,9 @@ app.use('/api/chamados', rotasChamados);
 const rotasAvaliacoes = require('./routes/avaliacoes.routes');
 
 app.use('/api/avaliacoes', rotasAvaliacoes);
+
+// Documentação Swagger
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 //--------------------------------------------
 // -------------------------------------------------------
