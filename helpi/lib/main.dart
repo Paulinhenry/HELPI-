@@ -6,9 +6,8 @@ import 'core/providers/auth_provider.dart';
 import 'core/theme/app_colors.dart';
 
 // Importações Features (As telas da aplicação)
-import 'features/chamados/screens/mapa_screen.dart';
 import 'features/auth/screens/login_screen.dart';
-import 'features/auth/screens/home_screen.dart';
+import 'features/chamados/screens/mapa_screen.dart';
 
 void main() {
   runApp(
@@ -32,12 +31,11 @@ class HelpiApp extends StatelessWidget {
       title: 'Helpi',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        // Agora usamos as tuas cores centrais!
         colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primaryColor),
         scaffoldBackgroundColor: AppColors.background,
         useMaterial3: true,
       ),
-      // O Roteador Automático
+      // O Roteador Automático via Provider
       home: Consumer<AuthProvider>(
         builder: (context, auth, child) {
           if (auth.isLoading) {
@@ -46,32 +44,15 @@ class HelpiApp extends StatelessWidget {
           if (auth.isLoggedIn) {
             return const MapaScreen();
           }
-          // Quando o Victor terminar o LoginScreen, importa e substitui esta linha:
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          // Tela de Login do Victor
+          return const LoginScreen();
         },
       ),
     );
-  title: 'Helpi',
-  debugShowCheckedModeBanner: false,
-  theme: ThemeData(
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: Colors.blueAccent,
-    ),
-    useMaterial3: true,
-  ),
-
-  routes: {
-    '/home': (context) => const HomeScreen(),
-  },
-
-  home: const LoginScreen(),
-);
   }
 }
 
-// O Ecrã de Carregamento mantemos aqui pois é global e super leve
+// O Ecrã de Carregamento — global e super leve
 class TelaSplash extends StatelessWidget {
   const TelaSplash({super.key});
 

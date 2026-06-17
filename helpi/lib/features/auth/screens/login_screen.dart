@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+
+// Importação do AuthProvider para gerir o estado de login
+import '../../../core/providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,39 +16,62 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final senhaController = TextEditingController();
+  bool _carregando = false;
 
   Future<void> fazerLogin() async {
-    final response = await http.post(
-      Uri.parse('http://localhost:3000/api/login/clientes'),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'email': emailController.text,
-        'senha': senhaController.text,
-      }),
-    );
+    setState(() => _carregando = true);
 
-    print(response.statusCode);
-    print(response.body);
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:3000/api/login/clientes'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': emailController.text,
+          'senha': senhaController.text,
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      final dados = jsonDecode(response.body);
+      debugPrint('Status: ${response.statusCode}');
+      debugPrint('Body: ${response.body}');
 
-      final token = dados['token'];
+      if (response.statusCode == 200) {
+        final dados = jsonDecode(response.body);
+        final token = dados['token'];
 
-      final prefs = await SharedPreferences.getInstance();
+        // Usa o AuthProvider para guardar o token e trocar de ecrã automaticamente
+        // O Consumer no main.dart vai detetar a mudança e mostrar o MapaScreen
+        if (mounted) {
+          await context.read<AuthProvider>().login(token);
+        }
 
-      await prefs.setString('jwt_token', token);
-
-      print('TOKEN SALVO COM SUCESSO');
-
-      final tokenSalvo = prefs.getString('jwt_token');
-
-      print('TOKEN RECUPERADO:');
-      print(tokenSalvo);
-
-      Navigator.pushReplacementNamed(context, '/home');
+        debugPrint('LOGIN EFETUADO COM SUCESSO');
+      } else {
+        // Mostra mensagem de erro se o login falhar
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('E-mail ou senha incorretos.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Erro de rede (servidor desligado, sem internet, etc.)
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro de ligação: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _carregando = false);
+      }
     }
   }
 
@@ -85,10 +111,16 @@ class _LoginScreenState extends State<LoginScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () async {
+                onPressed: _carregando ? null : () async {
                   await fazerLogin();
                 },
-                child: const Text('Entrar'),
+                child: _carregando
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Entrar'),
               ),
             ),
           ],
