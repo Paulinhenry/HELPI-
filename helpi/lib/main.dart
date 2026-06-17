@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'features/auth/screens/login_screen.dart';
+import 'features/auth/screens/home_screen.dart';
 
 void main() {
   runApp(const HelpiApp());
@@ -10,14 +12,21 @@ class HelpiApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Helpi',
-      debugShowCheckedModeBanner: false, // Tira aquela faixa feia de "DEBUG"
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blueAccent), // A cor principal da tua marca
-        useMaterial3: true,
-      ),
-      home: const TelaSplash(), // A primeira tela que vamos criar a seguir
-    );
+  title: 'Helpi',
+  debugShowCheckedModeBanner: false,
+  theme: ThemeData(
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: Colors.blueAccent,
+    ),
+    useMaterial3: true,
+  ),
+
+  routes: {
+    '/home': (context) => const HomeScreen(),
+  },
+
+  home: const LoginScreen(),
+);
   }
 }
 
