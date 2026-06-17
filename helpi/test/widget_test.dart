@@ -1,30 +1,25 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// Teste básico de widget para verificar que a app Helpi arranca corretamente.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 import 'package:helpi/main.dart';
+import 'package:helpi/core/providers/auth_provider.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('Helpi app arranca e mostra o logo', (WidgetTester tester) async {
+    // A HelpiApp precisa de um Provider para funcionar
+    await tester.pumpWidget(
+      ChangeNotifierProvider(
+        create: (_) => AuthProvider()..checkLoginStatus(),
+        child: const HelpiApp(),
+      ),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Aguarda a verificação do token completar
+    await tester.pumpAndSettle();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verifica que a app arrancou (mostra o texto HELPI na splash ou no login)
+    expect(find.text('HELPI'), findsOneWidget);
   });
 }

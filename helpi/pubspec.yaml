@@ -46,6 +46,11 @@ dependencies:
   # Gestor de estado (avisa a app quando o user está logado/deslogado)
   provider: ^6.1.0
 
+  # Ferramentas Nativas para o Helpi
+  geolocator: ^11.0.0       # Para capturar as coordenadas (Latitude/Longitude)
+  
+  google_maps_flutter: ^2.5.3 # Para desenhar o mapa no ecrã
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

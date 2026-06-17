@@ -1,8 +1,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    
+
     <application
         android:label="helpi"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <!-- Google Maps API Key para renderizar o mapa com ruas reais -->
+        <meta-data android:name="com.google.android.geo.API_KEY"
+                   android:value="AIzaSyC-QhhU8DO0mkkuzx_MuSPz-Z4nwJtF37E"/>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
