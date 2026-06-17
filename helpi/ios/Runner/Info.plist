@@ -66,5 +66,10 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>O Helpi precisa da sua localização para encontrar profissionais próximos de si e enviar o socorro para o sítio certo.</string>
+	
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>O Helpi precisa de aceder à localização em segundo plano para que os profissionais possam navegar até ao destino sem interrupções.</string>
 </dict>
 </plist>
