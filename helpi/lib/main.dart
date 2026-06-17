@@ -7,6 +7,8 @@ import 'core/theme/app_colors.dart';
 
 // Importações Features (As telas da aplicação)
 import 'features/chamados/screens/mapa_screen.dart';
+import 'features/auth/screens/login_screen.dart';
+import 'features/auth/screens/home_screen.dart';
 
 void main() {
   runApp(
@@ -51,6 +53,21 @@ class HelpiApp extends StatelessWidget {
         },
       ),
     );
+  title: 'Helpi',
+  debugShowCheckedModeBanner: false,
+  theme: ThemeData(
+    colorScheme: ColorScheme.fromSeed(
+      seedColor: Colors.blueAccent,
+    ),
+    useMaterial3: true,
+  ),
+
+  routes: {
+    '/home': (context) => const HomeScreen(),
+  },
+
+  home: const LoginScreen(),
+);
   }
 }
 
