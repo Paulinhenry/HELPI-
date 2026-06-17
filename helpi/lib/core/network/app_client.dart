@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -6,11 +5,8 @@ class ApiClient {
   late Dio dio;
 
   ApiClient() {
-    // ⚠️ TRUQUE DE ENGENHARIA MULTIPLATAFORMA:
-    // - Web/iOS: usa 'localhost' normalmente
-    // - Emulador Android: precisa de '10.0.2.2' para chegar ao PC
+    // Vai buscar a URL base com o teu IP da rede Wi-Fi
     String baseUrl = _resolverBaseUrl();
-
 
     dio = Dio(BaseOptions(
       baseUrl: baseUrl,
@@ -43,24 +39,16 @@ class ApiClient {
     ));
   }
 
-  /// Resolve o endereço base da API de acordo com a plataforma:
-  /// - Web: localhost (o browser acede diretamente)
-  /// - Android Emulador: 10.0.2.2 (redireciona para o PC host)
-  /// - iOS / Desktop: localhost
   static String _resolverBaseUrl() {
-    if (kIsWeb) {
-      return 'http://[IP_ADDRESS]/api';
-    }
+    // ⚠️ PASSO ÚNICO PARA TESTAR NO TELEMÓVEL FÍSICO:
+    // Substitui o IP abaixo pelo "Endereço IPv4" real que apareceu no teu CMD (ipconfig)
+    const String ipDoMeuComputador = '192.168.3.94'; // <--- MUDA APENAS ISTO
+    
+    // A porta onde o teu servidor Node.js está a correr
+    const String porta = '3000';
 
-    // Importação condicional: só acede a dart:io em plataformas nativas
-    try {
-      // ignore: uri_does_not_exist
-      final isAndroid = defaultTargetPlatform == TargetPlatform.android;
-      if (isAndroid) {
-        return 'http://[IP_ADDRESS]/api';
-      }
-    } catch (_) {}
-
-    return 'http://[IP_ADDRESS]/api';
+    // Como o teu telemóvel físico e o computador estão na MESMA REDE Wi-Fi,
+    // esta URL vai funcionar perfeitamente sem precisares de lógicas complexas.
+    return 'http://$ipDoMeuComputador:$porta/api';
   }
 }

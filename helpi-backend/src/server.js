@@ -33,8 +33,8 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 
-server.listen(PORT, () => {
-    logger.info(`🚀 Helpi API rodando em http://localhost:${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+    logger.info(`🚀 Helpi API rodando em http://0.0.0.0:${PORT} (Acessível na rede local)`);
     logger.info(`📄 Documentação disponível em http://localhost:${PORT}/api-docs`);
 });
 
