@@ -49,7 +49,7 @@ class ApiClient {
   /// - iOS / Desktop: localhost
   static String _resolverBaseUrl() {
     if (kIsWeb) {
-      return 'http://localhost:3000/api';
+      return 'http://[IP_ADDRESS]/api';
     }
 
     // Importação condicional: só acede a dart:io em plataformas nativas
@@ -57,10 +57,10 @@ class ApiClient {
       // ignore: uri_does_not_exist
       final isAndroid = defaultTargetPlatform == TargetPlatform.android;
       if (isAndroid) {
-        return 'http://10.0.2.2:3000/api';
+        return 'http://[IP_ADDRESS]/api';
       }
     } catch (_) {}
 
-    return 'http://localhost:3000/api';
+    return 'http://[IP_ADDRESS]/api';
   }
 }
