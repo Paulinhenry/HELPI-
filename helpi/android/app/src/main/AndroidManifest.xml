@@ -8,6 +8,11 @@
         android:label="helpi"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <!-- Google Maps API Key para renderizar o mapa com ruas reais -->
+        <meta-data android:name="com.google.android.geo.API_KEY"
+                   android:value="AIzaSyDHRwRrYCszyChXa85J8IEkqhwyeU4kVXk"/>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
