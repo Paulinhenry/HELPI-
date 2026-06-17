@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -6,13 +5,8 @@ class ApiClient {
   late Dio dio;
 
   ApiClient() {
-    // ⚠️ ATENÇÃO - TRUQUE DE ENGENHARIA MOBILE:
-    // O emulador do Android não entende 'localhost' (ele acha que o localhost é o próprio telemóvel).
-    // Para aceder ao Node.js que está a rodar no teu computador, temos de usar '10.0.2.2'.
-    // Se for iOS ou Web, usa 'localhost'.
-    String baseUrl = Platform.isAndroid 
-        ? 'http://10.0.2.2:3000/api' 
-        : 'http://localhost:3000/api';
+    // Vai buscar a URL base com o teu IP da rede Wi-Fi
+    String baseUrl = _resolverBaseUrl();
 
     dio = Dio(BaseOptions(
       baseUrl: baseUrl,
@@ -43,5 +37,18 @@ class ApiClient {
         return handler.next(e);
       },
     ));
+  }
+
+  static String _resolverBaseUrl() {
+    // ⚠️ PASSO ÚNICO PARA TESTAR NO TELEMÓVEL FÍSICO:
+    // Substitui o IP abaixo pelo "Endereço IPv4" real que apareceu no teu CMD (ipconfig)
+    const String ipDoMeuComputador = '192.168.3.94'; // <--- MUDA APENAS ISTO
+    
+    // A porta onde o teu servidor Node.js está a correr
+    const String porta = '3000';
+
+    // Como o teu telemóvel físico e o computador estão na MESMA REDE Wi-Fi,
+    // esta URL vai funcionar perfeitamente sem precisares de lógicas complexas.
+    return 'http://$ipDoMeuComputador:$porta/api';
   }
 }
