@@ -11,7 +11,7 @@
 
         <!-- Google Maps API Key para renderizar o mapa com ruas reais -->
         <meta-data android:name="com.google.android.geo.API_KEY"
-                   android:value="AIzaSyDHRwRrYCszyChXa85J8IEkqhwyeU4kVXk"/>
+                   android:value="AIzaSyC-QhhU8DO0mkkuzx_MuSPz-Z4nwJtF37E"/>
 
         <activity
             android:name=".MainActivity"
