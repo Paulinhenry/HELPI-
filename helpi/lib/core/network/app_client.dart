@@ -10,8 +10,8 @@ class ApiClient {
 
     dio = Dio(BaseOptions(
       baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -40,15 +40,6 @@ class ApiClient {
   }
 
   static String _resolverBaseUrl() {
-    // ⚠️ PASSO ÚNICO PARA TESTAR NO TELEMÓVEL FÍSICO:
-    // Substitui o IP abaixo pelo "Endereço IPv4" real que apareceu no teu CMD (ipconfig)
-    const String ipDoMeuComputador = '192.168.3.94'; // <--- MUDA APENAS ISTO
-    
-    // A porta onde o teu servidor Node.js está a correr
-    const String porta = '3000';
-
-    // Como o teu telemóvel físico e o computador estão na MESMA REDE Wi-Fi,
-    // esta URL vai funcionar perfeitamente sem precisares de lógicas complexas.
-    return 'http://$ipDoMeuComputador:$porta/api';
+    return 'http://localhost:3000/api';
   }
 }
