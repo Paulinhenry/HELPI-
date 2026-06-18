@@ -28,6 +28,22 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
+    // Valida formato do email
+    if (!_emailController.text.contains('@') || !_emailController.text.contains('.')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('E-mail inválido'), backgroundColor: AppColors.error),
+      );
+      return;
+    }
+
+    // Valida comprimento da senha (mínimo 6 caracteres)
+    if (_senhaController.text.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Senha deve ter pelo menos 6 caracteres'), backgroundColor: AppColors.error),
+      );
+      return;
+    }
+
     setState(() => _carregando = true);
 
     try {

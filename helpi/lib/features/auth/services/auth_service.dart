@@ -26,6 +26,9 @@ class AuthService {
       if (e.response?.statusCode == 401) {
         throw Exception('E-mail ou senha incorretos.');
       }
+      if (e.response?.statusCode == 400) {
+        throw Exception('E-mail ou senha incorretos.');
+      }
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout) {
         throw Exception('O servidor demorou demasiado a responder.');
