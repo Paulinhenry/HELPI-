@@ -10,26 +10,45 @@ class AuthProvider with ChangeNotifier {
 
   // Verifica o Token REAL na memória do telemóvel
   Future<void> checkLoginStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-    
-    if (token != null && token.isNotEmpty) {
-      _isLoggedIn = true;
-    } else {
-      _isLoggedIn = false;
-    }
-    
-    _isLoading = false;
-    notifyListeners(); 
+  print('CHECK LOGIN STATUS INICIADO');
+
+  final prefs = await SharedPreferences.getInstance();
+
+  print('TODAS AS CHAVES SALVAS:');
+  print(prefs.getKeys());
+
+  final token = prefs.getString('jwt_token');
+
+  print('TOKEN ENCONTRADO:');
+  print(token);
+
+  if (token != null && token.isNotEmpty) {
+    _isLoggedIn = true;
+  } else {
+    _isLoggedIn = false;
   }
+
+  _isLoading = false;
+  notifyListeners();
+}
 
   // O Victor vai chamar esta função quando a API responder com sucesso
   Future<void> login(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('jwt_token', token); 
-    _isLoggedIn = true;
-    notifyListeners();
-  }
+  final prefs = await SharedPreferences.getInstance();
+
+  await prefs.setString('jwt_token', token);
+
+  print('TOKEN SALVO PELO PROVIDER:');
+  print(token);
+
+  final teste = prefs.getString('jwt_token');
+
+  print('TOKEN LIDO IMEDIATAMENTE APOS SALVAR:');
+  print(teste);
+
+  _isLoggedIn = true;
+  notifyListeners();
+}
 
   // Função para o botão de "Sair da Conta"
   Future<void> logout() async {
