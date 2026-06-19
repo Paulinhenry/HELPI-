@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # ─── API NODE.JS (HELPI BACKEND) ───
+  api:
+    build: .
+    container_name: helpi-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://helpi_user:senha_segura@db:5432/helpi_db?sslmode=disable
+      - DB_SSL=false
+      - JWT_SECRET=sua_chave_secreta_aqui_em_producao_altere
+      - DB_POOL_MAX=20
+      - CORS_ORIGIN=* # Ajustar em produção
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - helpi-network
+
+  # ─── BANCO DE DADOS POSTGRESQL + POSTGIS ───
+  db:
+    image: postgis/postgis:15-3.3
+    container_name: helpi-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=helpi_user
+      - POSTGRES_PASSWORD=senha_segura
+      - POSTGRES_DB=helpi_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - helpi-pgdata:/var/lib/postgresql/data
+    networks:
+      - helpi-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U helpi_user -d helpi_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  helpi-pgdata:
+
+networks:
+  helpi-network:
+    driver: bridge

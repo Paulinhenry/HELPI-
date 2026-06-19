@@ -16,6 +16,27 @@ const { validarCriacaoChamado } = require('../middlewares/validators/chamadoVali
 /**
  * @openapi
  * /api/chamados:
+ *   get:
+ *     summary: Listar chamados do cliente autenticado (paginado)
+ *     tags: [Chamados]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: cursor
+ *         schema:
+ *           type: string
+ *         description: Cursor para paginação (valor de criado_em do último item)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *           maximum: 50
+ *         description: Número de resultados por página
+ *     responses:
+ *       '200':
+ *         description: Lista de chamados do cliente com paginação
  *   post:
  *     summary: Criar um novo chamado de emergência
  *     tags: [Chamados]
@@ -123,6 +144,7 @@ const { validarCriacaoChamado } = require('../middlewares/validators/chamadoVali
  *         description: Sem permissão para finalizar este chamado
  */
 
+router.get('/', authCliente, chamadosController.listarMeusChamados);
 router.post('/', authCliente, validarCriacaoChamado, chamadosController.criarChamado);
 router.put('/:id/aceitar', authProfissional, chamadosController.aceitarChamado);
 router.put('/:id/chegada', authProfissional, chamadosController.registrarChegada);

@@ -1,15 +1,25 @@
 // =============================================================
 // HELPI - Aplicação Express Principal
 // Configura middlewares, rotas e segurança da API.
+//
+// ESCALABILIDADE:
+// - Compressão gzip (respostas 60-70% menores)
+// - Rate-limiting global (anti-DoS)
+// - CORS restrito por ambiente
+// - Versionamento de API (/api/v1)
+// - Health check profundo (com verificação do DB)
 // =============================================================
 
 const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
 const helmet = require('helmet');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpecs = require('./config/swagger');
 const logger = require('./utils/logger');
+const pool = require('./config/database');
 const { errorHandler } = require('./middlewares/errorHandler');
 
 // Importação das Rotas
@@ -28,12 +38,48 @@ const app = express();
 // Helmet — Define headers HTTP de segurança (XSS, clickjacking, etc.)
 app.use(helmet());
 
-// CORS — Controla quais origens podem acessar a API
+// CORS — Restrito por ambiente (não mais origin: '*' em produção)
+const corsOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+    : ['*'];
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || '*',
+    origin: process.env.NODE_ENV === 'production' ? corsOrigins : '*',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
 }));
+
+// =============================================================
+// Middlewares de Performance
+// =============================================================
+
+// Compressão gzip — reduz tamanho das respostas em 60-70%
+app.use(compression({
+    level: 6, // Equilíbrio entre CPU e compressão
+    threshold: 1024, // Só comprimir respostas > 1KB
+    filter: (req, res) => {
+        if (req.headers['x-no-compression']) return false;
+        return compression.filter(req, res);
+    }
+}));
+
+// =============================================================
+// Rate Limiting Global — Anti-DoS
+// =============================================================
+
+const globalLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000, // 1 minuto
+    max: process.env.NODE_ENV === 'production' ? 100 : 1000, // 100 req/min em prod
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        erro: 'Muitas requisições. Tente novamente em 1 minuto.'
+    },
+    skip: (req) => req.path === '/api/v1/status', // Health check sem limite
+});
+
+app.use('/api', globalLimiter);
 
 // =============================================================
 // Middlewares de Parsing e Logging
@@ -50,22 +96,60 @@ app.use(morgan('combined', { stream: { write: (message) => logger.info(message.t
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 // =============================================================
-// Rotas da API
+// Rotas da API v1 (Versionadas)
 // =============================================================
 
+// Novas rotas versionadas (/api/v1/...)
+app.use('/api/v1', rotasAuth);
+app.use('/api/v1/clientes', rotasClientes);
+app.use('/api/v1/profissionais', rotasProfissionais);
+app.use('/api/v1/chamados', rotasChamados);
+app.use('/api/v1/avaliacoes', rotasAvaliacoes);
+
+// Retrocompatibilidade — rotas antigas continuam funcionando
 app.use('/api', rotasAuth);
 app.use('/api/clientes', rotasClientes);
 app.use('/api/profissionais', rotasProfissionais);
 app.use('/api/chamados', rotasChamados);
 app.use('/api/avaliacoes', rotasAvaliacoes);
 
-// Health Check — Status da API
-app.get('/api/status', (req, res) => {
-    res.json({
+// =============================================================
+// Health Check Profundo — Verifica API + Banco de Dados
+// =============================================================
+
+app.get('/api/v1/status', async (req, res) => {
+    const status = {
         status: 'online',
         mensagem: 'Motor do Helpi a funcionar perfeitamente!',
-        timestamp: new Date().toISOString()
-    });
+        versao: '1.0.0',
+        timestamp: new Date().toISOString(),
+        uptime_seconds: Math.floor(process.uptime()),
+        ambiente: process.env.NODE_ENV || 'development',
+    };
+
+    // Verificação do banco de dados
+    try {
+        const inicio = Date.now();
+        await pool.query('SELECT 1');
+        status.banco_de_dados = {
+            status: 'conectado',
+            latencia_ms: Date.now() - inicio
+        };
+    } catch (err) {
+        status.banco_de_dados = {
+            status: 'desconectado',
+            erro: process.env.NODE_ENV === 'production' ? 'Erro de conexão' : err.message
+        };
+        status.status = 'degradado';
+    }
+
+    const httpStatus = status.status === 'online' ? 200 : 503;
+    res.status(httpStatus).json(status);
+});
+
+// Retrocompatibilidade
+app.get('/api/status', async (req, res) => {
+    res.redirect(301, '/api/v1/status');
 });
 
 // =============================================================
@@ -74,7 +158,8 @@ app.get('/api/status', (req, res) => {
 
 app.use((req, res) => {
     res.status(404).json({
-        erro: `Rota ${req.method} ${req.originalUrl} não encontrada.`
+        erro: `Rota ${req.method} ${req.originalUrl} não encontrada.`,
+        sugestao: 'Consulte a documentação em /api-docs'
     });
 });
 
