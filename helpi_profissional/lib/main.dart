@@ -27,7 +27,10 @@ class HelpiProfissionalApp extends StatelessWidget {
     return MaterialApp(
       title: 'Helpi Profissional',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.green),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.black,
+      ),
       // O Roteador Dinâmico:
       home: Consumer<AuthProvider>(
         builder: (context, auth, _) {
@@ -43,7 +46,7 @@ class HelpiProfissionalApp extends StatelessWidget {
 
 // --- O TEU ECRÃ DE RADAR AGORA USA O ID REAL ---
 class RadarScreen extends StatefulWidget {
-  final int profissionalId; // Exigimos o ID real agora!
+  final String profissionalId; // Exigimos o ID real agora!
 
   const RadarScreen({super.key, required this.profissionalId});
 
@@ -95,11 +98,11 @@ class _RadarScreenState extends State<RadarScreen> {
     final nome = context.read<AuthProvider>().nome ?? 'Profissional';
 
     return Scaffold(
-      backgroundColor: _isOnline ? Colors.green[50] : Colors.grey[200],
+      backgroundColor: Colors.black,
       appBar: AppBar(
         title: Text('Olá, $nome', style: const TextStyle(color: Colors.white)),
-        backgroundColor: _isOnline ? Colors.green : Colors.grey,
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.blue),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -117,10 +120,10 @@ class _RadarScreenState extends State<RadarScreen> {
             width: 200, height: 200,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: _isOnline ? Colors.green : Colors.grey,
+              color: _isOnline ? Colors.blue : Colors.grey[800],
               boxShadow: [
                 BoxShadow(
-                  color: (_isOnline ? Colors.green : Colors.grey).withOpacity(0.5),
+                  color: (_isOnline ? Colors.blue : Colors.grey[800]!).withOpacity(0.5),
                   blurRadius: 20,
                   spreadRadius: 5,
                 )

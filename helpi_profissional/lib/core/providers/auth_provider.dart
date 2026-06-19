@@ -7,19 +7,19 @@ class AuthProvider with ChangeNotifier {
   final ApiClient _apiClient = ApiClient();
   
   bool _isAuthenticated = false;
-  int? _profissionalId;
+  String? _profissionalId;
   String? _nome;
 
   bool get isAuthenticated => _isAuthenticated;
-  int? get profissionalId => _profissionalId;
+  String? get profissionalId => _profissionalId;
   String? get nome => _nome;
 
   Future<void> checkLoginStatus() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+    final token = prefs.getString('access_token');
     if (token != null) {
       _isAuthenticated = true;
-      _profissionalId = prefs.getInt('usuarioId'); // Lê o ID real do BD
+      _profissionalId = prefs.getString('usuarioId'); // Lê o ID real do BD
       _nome = prefs.getString('nome');
     }
     notifyListeners();
@@ -34,11 +34,11 @@ class AuthProvider with ChangeNotifier {
       );
 
       final token = response.data['access_token'];
-      final profissional = response.data['profissional']; // A API retorna 'profissional'
+      final profissional = response.data['usuario']; // A API retorna 'usuario'
 
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', token);
-      await prefs.setInt('usuarioId', profissional['id']);
+      await prefs.setString('access_token', token);
+      await prefs.setString('usuarioId', profissional['id']);
       await prefs.setString('nome', profissional['nome']);
 
       _isAuthenticated = true;

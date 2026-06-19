@@ -34,14 +34,14 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[900], // Modo escuro para diferenciar da app do cliente
+      backgroundColor: Colors.black, // Fundo preto
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.handyman, size: 80, color: Colors.greenAccent),
+              const Icon(Icons.handyman, size: 80, color: Colors.blueAccent),
               const SizedBox(height: 16),
               const Text('Helpi Profissionais', style: TextStyle(fontSize: 28, color: Colors.white, fontWeight: FontWeight.bold)),
               const SizedBox(height: 40),
@@ -71,13 +71,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 height: 50,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.greenAccent[700],
+                    backgroundColor: Colors.blueAccent[700],
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: _isLoading ? null : _fazerLogin,
                   child: _isLoading 
                       ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('ENTRAR NO RADAR', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16)),
+                      : const Text('ENTRAR NO RADAR', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
               ),
             ],

@@ -9,7 +9,7 @@ class SocketService {
 
   io.Socket? _socket;
 
-  Future<void> ligarRadar(int profissionalId, Function(Map<String, dynamic>) onAlertaTrabalho) async {
+  Future<void> ligarRadar(String profissionalId, Function(Map<String, dynamic>) onAlertaTrabalho) async {
     if (_socket != null && _socket!.connected) return;
 
     // Obtém URL do Env (remove /api/v1 para os websockets)

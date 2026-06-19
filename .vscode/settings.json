@@ -7,5 +7,7 @@
             "default": true
         }
     ],
-    "gradle.javaDebug.cleanOutput": false
+    "gradle.javaDebug.cleanOutput": false,
+    "java.configuration.updateBuildConfiguration": "interactive",
+    "java.compile.nullAnalysis.mode": "automatic"
 }
