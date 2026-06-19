@@ -77,26 +77,45 @@ const criarChamado = async (req, res, next) => {
             });
         }
 
-        // ── WEBSOCKET: Notifica apenas profissionais próximos (rooms) ──
+        // --- COMEÇA AQUI O NOVO CÓDIGO DA SIRENE ---
+
+        // 3. A SIRENE DIGITAL (WEBSOCKETS)
         const io = req.app.get('io');
-        if (io) {
-            busca.rows.forEach((prof) => {
-                io.to(`profissional:${prof.id}`).emit('novo_chamado_emergencia', {
-                    mensagem: `🚨 URGENTE: Precisamos de um ${categoria_solicitada} a ${prof.distancia_km.toFixed(1)}km!`,
-                    chamado_id: novoChamado.rows[0].id,
-                    categoria: categoria_solicitada,
-                    distancia_km: parseFloat(prof.distancia_km.toFixed(1))
-                });
+        const profissionaisConectados = req.app.get('profissionaisConectados');
+        let profissionaisNotificados = 0;
+
+        if (io && profissionaisConectados) {
+            // Percorre todos os profissionais que o PostGIS encontrou num raio de 10km
+            busca.rows.forEach(profissional => {
+                // Verifica se este profissional específico está com a app aberta (online)
+                const socketId = profissionaisConectados.get(profissional.id);
+                
+                if (socketId) {
+                    // Dispara a notificação de emergência diretamente para o telemóvel dele
+                    io.to(socketId).emit('novo_chamado_emergencia', {
+                        chamado_id: novoChamado.rows[0].id,
+                        categoria: categoria_solicitada,
+                        descricao: problema_descricao,
+                        distancia_metros: Math.round(profissional.distancia_km * 1000), // convertendo km pra metros caso necessário, ou só profissional.distancia_metros se existisse na query. A query retorna distancia_km.
+                        valor_sugerido: 40.00 // A taxa de deslocamento que planeámos
+                        // 🔒 Segurança: Não enviamos a morada exata nem as coordenadas 
+                        // do cliente até o profissional aceitar o serviço!
+                    });
+                    profissionaisNotificados++;
+                }
             });
         }
 
         logger.info(`Chamado criado: ${novoChamado.rows[0].id} por cliente ${cliente_id}`);
 
-        res.status(201).json({
-            mensagem: "Chamado criado com sucesso! A notificar profissionais próximos...",
+        return res.status(201).json({
+            mensagem: "Emergência disparada! Profissionais notificados.",
             chamado: novoChamado.rows[0],
-            profissionais_notificados: busca.rows.length
+            profissionais_encontrados_no_raio: busca.rows.length,
+            profissionais_online_notificados: profissionaisNotificados
         });
+        
+        // --- TERMINA AQUI O NOVO CÓDIGO ---
     } catch (erro) {
         await client.query('ROLLBACK').catch(() => {});
         next(erro);
@@ -338,4 +357,34 @@ const listarMeusChamados = async (req, res, next) => {
     }
 };
 
-module.exports = { criarChamado, aceitarChamado, registrarChegada, finalizarChamado, listarMeusChamados };
+const cancelarChamado = async (req, res) => {
+    const { id } = req.params;
+    const cliente_id = req.usuario.id; // O JWT injeta isto automaticamente
+
+    try {
+        // Atualiza apenas se o chamado pertencer ao cliente e ainda estiver à procura
+        const result = await pool.query(
+            `UPDATE chamados_express 
+             SET status = 'cancelado_pelo_cliente' 
+             WHERE id = $1 AND cliente_id = $2 AND status = 'procurando_profissional'
+             RETURNING id, status`,
+            [id, cliente_id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(400).json({ 
+                erro: 'Chamado não encontrado ou já foi aceite por um profissional.' 
+            });
+        }
+
+        return res.status(200).json({ 
+            mensagem: 'Chamado cancelado com sucesso.', 
+            chamado: result.rows[0] 
+        });
+    } catch (error) {
+        logger.error('Erro ao cancelar chamado:', error);
+        return res.status(500).json({ erro: 'Erro interno ao cancelar o pedido.' });
+    }
+};
+
+module.exports = { criarChamado, aceitarChamado, registrarChegada, finalizarChamado, listarMeusChamados, cancelarChamado };

@@ -1,13 +1,17 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class Env {
   // Em produção, mude para a URL real da sua API
   static String get baseUrl {
-    // Se estiver a usar um telemóvel físico (conectado por cabo/Wi-Fi), 
-    // substitua as linhas abaixo pelo seu IP da rede local. Exemplo:
-    // return 'http://192.168.1.15:3000/api/v1';
+    // Tenta carregar do arquivo .env primeiro
+    final apiUrl = dotenv.env['API_URL'];
+    if (apiUrl != null && apiUrl.isNotEmpty) {
+      return apiUrl;
+    }
 
+    // Fallbacks padrão caso não exista arquivo .env ou a variável não esteja definida
     if (kIsWeb) {
       return 'http://localhost:3000/api/v1';
     }

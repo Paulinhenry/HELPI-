@@ -17,6 +17,9 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+    tasks.withType<JavaCompile> {
+        options.compilerArgs.addAll(listOf("-Xlint:-options"))
+    }
 }
 
 tasks.register<Delete>("clean") {

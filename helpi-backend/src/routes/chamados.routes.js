@@ -146,6 +146,10 @@ const { validarCriacaoChamado } = require('../middlewares/validators/chamadoVali
 
 router.get('/', authCliente, chamadosController.listarMeusChamados);
 router.post('/', authCliente, validarCriacaoChamado, chamadosController.criarChamado);
+
+// --- NOVA ROTA DE CANCELAMENTO AQUI ---
+router.patch('/:id/cancelar', authCliente, chamadosController.cancelarChamado);
+
 router.put('/:id/aceitar', authProfissional, chamadosController.aceitarChamado);
 router.put('/:id/chegada', authProfissional, chamadosController.registrarChegada);
 router.put('/:id/finalizar', authProfissional, chamadosController.finalizarChamado);
