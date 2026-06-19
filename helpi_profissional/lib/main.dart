@@ -1,121 +1,140 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-void main() {
-  runApp(const MyApp());
+// Importa os teus ficheiros
+import 'core/providers/auth_provider.dart';
+import 'features/auth/screens/login_screen.dart';
+import 'services/socket_service.dart'; // O ficheiro que te dei na resposta anterior
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final authProvider = AuthProvider();
+  await authProvider.checkLoginStatus(); // Vai ver se a sessão já existe na memória
+
+  runApp(
+    MultiProvider(
+      providers: [ChangeNotifierProvider.value(value: authProvider)],
+      child: const HelpiProfissionalApp(),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class HelpiProfissionalApp extends StatelessWidget {
+  const HelpiProfissionalApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+      title: 'Helpi Profissional',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(primarySwatch: Colors.green),
+      // O Roteador Dinâmico:
+      home: Consumer<AuthProvider>(
+        builder: (context, auth, _) {
+          if (auth.isAuthenticated) {
+            return RadarScreen(profissionalId: auth.profissionalId!);
+          }
+          return const LoginScreen();
+        },
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+// --- O TEU ECRÃ DE RADAR AGORA USA O ID REAL ---
+class RadarScreen extends StatefulWidget {
+  final int profissionalId; // Exigimos o ID real agora!
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+  const RadarScreen({super.key, required this.profissionalId});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<RadarScreen> createState() => _RadarScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _RadarScreenState extends State<RadarScreen> {
+  final SocketService _socketService = SocketService();
+  bool _isOnline = false;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  void _toggleModoTrabalho() {
+    setState(() => _isOnline = !_isOnline);
+
+    if (_isOnline) {
+      // LIGA O RADAR COM O ID REAL DA TUA BASE DE DADOS POSTGRESQL!
+      _socketService.ligarRadar(widget.profissionalId, _mostrarAlertaDeTrabalho);
+    } else {
+      _socketService.desligarRadar();
+    }
+  }
+
+  void _mostrarAlertaDeTrabalho(Map<String, dynamic> dados) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('🚨 NOVO SERVIÇO!'),
+        content: Text('Categoria: ${dados['categoria']}\nProblema: ${dados['descricao']}\nDistância: ${dados['distancia_metros']}m'),
+        actions: [
+          TextButton(
+             onPressed: () => Navigator.pop(context),
+             child: const Text('RECUSAR', style: TextStyle(color: Colors.red))
+          ),
+          ElevatedButton(
+             onPressed: () {
+               Navigator.pop(context);
+               // TODO: Logica de aceitar o serviço (chamada API PUT /aceitar)
+             },
+             child: const Text('ACEITAR')
+          )
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    final nome = context.read<AuthProvider>().nome ?? 'Profissional';
+
     return Scaffold(
+      backgroundColor: _isOnline ? Colors.green[50] : Colors.grey[200],
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: Text('Olá, $nome', style: const TextStyle(color: Colors.white)),
+        backgroundColor: _isOnline ? Colors.green : Colors.grey,
+        iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              _socketService.desligarRadar();
+              context.read<AuthProvider>().logout();
+            },
+          )
+        ],
       ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
-          children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+        child: GestureDetector(
+          onTap: _toggleModoTrabalho,
+          child: Container(
+            width: 200, height: 200,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: _isOnline ? Colors.green : Colors.grey,
+              boxShadow: [
+                BoxShadow(
+                  color: (_isOnline ? Colors.green : Colors.grey).withOpacity(0.5),
+                  blurRadius: 20,
+                  spreadRadius: 5,
+                )
+              ]
             ),
-          ],
+            child: Center(
+              child: Text(
+                _isOnline ? 'FICAR\nOFFLINE' : 'FICAR\nONLINE',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }
