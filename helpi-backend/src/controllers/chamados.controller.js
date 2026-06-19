@@ -338,4 +338,34 @@ const listarMeusChamados = async (req, res, next) => {
     }
 };
 
-module.exports = { criarChamado, aceitarChamado, registrarChegada, finalizarChamado, listarMeusChamados };
+const cancelarChamado = async (req, res) => {
+    const { id } = req.params;
+    const cliente_id = req.usuario.id; // O JWT injeta isto automaticamente
+
+    try {
+        // Atualiza apenas se o chamado pertencer ao cliente e ainda estiver à procura
+        const result = await pool.query(
+            `UPDATE chamados_express 
+             SET status = 'cancelado_pelo_cliente' 
+             WHERE id = $1 AND cliente_id = $2 AND status = 'procurando_profissional'
+             RETURNING id, status`,
+            [id, cliente_id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(400).json({ 
+                erro: 'Chamado não encontrado ou já foi aceite por um profissional.' 
+            });
+        }
+
+        return res.status(200).json({ 
+            mensagem: 'Chamado cancelado com sucesso.', 
+            chamado: result.rows[0] 
+        });
+    } catch (error) {
+        logger.error('Erro ao cancelar chamado:', error);
+        return res.status(500).json({ erro: 'Erro interno ao cancelar o pedido.' });
+    }
+};
+
+module.exports = { criarChamado, aceitarChamado, registrarChegada, finalizarChamado, listarMeusChamados, cancelarChamado };

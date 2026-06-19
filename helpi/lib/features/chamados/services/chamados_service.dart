@@ -38,4 +38,21 @@ class ChamadosService {
       throw Exception('Ocorreu um erro inesperado.');
     }
   }
+  // Nova função para cancelar o pedido
+  Future<void> cancelarChamado(String chamadoId) async {
+    try {
+      final response = await _apiClient.dio.patch('/chamados/$chamadoId/cancelar');
+      
+      if (response.statusCode != 200) {
+        throw Exception('Falha ao cancelar o chamado no servidor.');
+      }
+    } on DioException catch (e) {
+      if (e.response != null) {
+        throw Exception(e.response?.data['erro'] ?? 'Erro no servidor.');
+      }
+      throw Exception('Sem ligação à internet.');
+    } catch (e) {
+      throw Exception('Erro inesperado: $e');
+    }
+  }
 }

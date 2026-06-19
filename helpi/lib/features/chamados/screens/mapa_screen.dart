@@ -152,12 +152,33 @@ class _MapaScreenState extends State<MapaScreen> {
   }
 
   // Cancelamento manual feito pelo cliente clicando no botão
-  void _cancelarBuscaManualmente() {
+  Future<void> _cancelarBuscaManualmente() async {
+    // 1. Pára o cronómetro imediatamente
     _cooldownTimer?.cancel();
+
+    // 2. Se temos um ID de chamado registado, avisamos o Node.js para o cancelar!
+    if (_idChamadoAtual != null) {
+      try {
+        await _chamadosService.cancelarChamado(_idChamadoAtual!);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pedido cancelado com sucesso.'), backgroundColor: Colors.orange),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Aviso: $e'), backgroundColor: AppColors.error),
+          );
+        }
+      }
+    }
+
+    // 3. Independentemente do servidor, fechamos a interface para o utilizador
     setState(() {
       _isProcurando = false;
       _categoriaSelecionada = null;
-      _idChamadoAtual = null;
+      _idChamadoAtual = null; // Limpamos a memória
     });
   }
 
