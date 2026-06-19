@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Importações Core (A tua infraestrutura)
 import 'core/providers/auth_provider.dart';
@@ -9,7 +10,10 @@ import 'core/theme/app_colors.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/chamados/screens/mapa_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
+
   runApp(
     MultiProvider(
       providers: [

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
+import 'package:geocoding/geocoding.dart'; // <--- Nova importação para ler moradas
 
 // Importações do Core
 import '../../../core/services/location_service.dart';
@@ -21,6 +22,9 @@ class _MapaScreenState extends State<MapaScreen> {
   GoogleMapController? mapController;
   Position? _posicaoAtual;
   bool _carregando = true;
+
+  // Nova variável de estado
+  String _enderecoAtual = "A procurar morada...";
 
   // --- CONTROLE DE ESTADOS DO CHAMADO ---
   String? _categoriaSelecionada;
@@ -55,11 +59,44 @@ class _MapaScreenState extends State<MapaScreen> {
 
   Future<void> _buscarLocalizacao() async {
     try {
+      // 1. Vai buscar a Latitude/Longitude crua
       Position posicao = await LocationService.obterLocalizacaoAtual();
-      setState(() {
-        _posicaoAtual = posicao;
-        _carregando = false;
-      });
+      
+      String enderecoFormatado = "Morada desconhecida";
+
+      // 2. O Mágico Geocoding: Pergunta à Google qual é a rua destas coordenadas
+      try {
+        List<Placemark> placemarks = await placemarkFromCoordinates(
+          posicao.latitude, 
+          posicao.longitude
+        );
+
+        if (placemarks.isNotEmpty) {
+          Placemark lugar = placemarks[0];
+          // Constrói a morada (Ex: "Rua Augusta, 123 - Lisboa")
+          // thoroughfare = Nome da Rua | subThoroughfare = Número da porta
+          final rua = lugar.thoroughfare ?? '';
+          final numero = lugar.subThoroughfare ?? '';
+          final cidade = lugar.subAdministrativeArea ?? lugar.locality ?? '';
+          
+          enderecoFormatado = '$rua, $numero - $cidade'.trim();
+          
+          // Limpeza caso a rua venha vazia
+          if (enderecoFormatado == ', -') enderecoFormatado = "GPS Ativo (Rua não identificada)";
+        }
+      } catch (geoErro) {
+        // Se o serviço de tradução falhar, não quebramos a app
+        enderecoFormatado = "Coordenadas: ${posicao.latitude.toStringAsFixed(4)}, ${posicao.longitude.toStringAsFixed(4)}";
+      }
+
+      // 3. Atualiza o ecrã com a morada real
+      if (mounted) {
+        setState(() {
+          _posicaoAtual = posicao;
+          _enderecoAtual = enderecoFormatado;
+          _carregando = false;
+        });
+      }
     } catch (e) {
       setState(() => _carregando = false);
       if (mounted) {
@@ -253,14 +290,14 @@ class _MapaScreenState extends State<MapaScreen> {
                       child: const Icon(Icons.my_location, color: AppColors.primaryColor, size: 20),
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Local Atual", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          const Text("Local Atual", style: TextStyle(fontSize: 12, color: Colors.grey)),
                           Text(
-                            "Usando GPS do dispositivo",
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            _enderecoAtual, // <--- A nossa nova variável inteligente
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
