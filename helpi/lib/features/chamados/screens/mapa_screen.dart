@@ -22,6 +22,8 @@ class _MapaScreenState extends State<MapaScreen> {
   Position? _posicaoAtual;
   bool _carregando = true;
   bool _solicitando = false;
+  bool _isProcurando = false; // Controla se estamos no modo "Radar"
+  String? _idChamadoAtual; // Guardará o ID do chamado devolvido pelo Node.js
   final ChamadosService _chamadosService = ChamadosService();
 
   // --- DADOS DA INTERFACE DO HELPI ---
@@ -67,37 +69,48 @@ class _MapaScreenState extends State<MapaScreen> {
   Future<void> _solicitarProfissional() async {
     if (_posicaoAtual == null || _categoriaSelecionada == null) return;
 
-    setState(() => _solicitando = true);
+    // 1. Muda a interface para o modo "Radar" instantaneamente
+    setState(() {
+      _isProcurando = true;
+      _solicitando = true;
+    });
 
     try {
-      await _chamadosService.criarChamado(
+      // 2. O MOMENTO MILIONÁRIO: Escreve no teu Banco de Dados PostGIS!
+      final chamadoId = await _chamadosService.criarChamado(
         categoria: _categoriaSelecionada!,
-        descricao: 'Preciso de um $_categoriaSelecionada urgente!', // Poderia ter um input de texto aqui
+        descricao: 'Preciso de um $_categoriaSelecionada urgente!', 
         latitude: _posicaoAtual!.latitude,
         longitude: _posicaoAtual!.longitude,
       );
 
       if (mounted) {
+        setState(() {
+          _idChamadoAtual = chamadoId;
+        });
+        
+        // Sucesso visual
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Buscando $_categoriaSelecionada próximo a você...'),
-            backgroundColor: AppColors.success,
-          ),
+          const SnackBar(content: Text('Pedido registado! A procurar profissionais...'), backgroundColor: AppColors.success),
         );
-        // Aqui mudaria para o status "Buscando..." ou "A caminho" na interface
       }
+      
+      // NOTA: O ecrã vai continuar no modo "Radar" a girar infinitamente agora. 
+      // Numa app On-Demand real, é exatamente isto que acontece até que um 
+      // profissional do outro lado aceite o pedido (via WebSockets no futuro).
+
     } catch (e) {
       if (mounted) {
+        setState(() {
+          _isProcurando = false;
+          _solicitando = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceAll('Exception: ', '')),
             backgroundColor: AppColors.error,
           ),
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _solicitando = false);
       }
     }
   }
@@ -166,7 +179,7 @@ class _MapaScreenState extends State<MapaScreen> {
                     // CAMADA 2: O PAINEL DE SOLICITAÇÃO (BOTTOM SHEET)
                     Align(
                       alignment: Alignment.bottomCenter,
-                      child: _construirPainelSolicitacao(),
+                      child: _isProcurando ? _construirPainelBuscando() : _construirPainelSolicitacao(),
                     ),
                   ],
                 ),
@@ -322,6 +335,68 @@ class _MapaScreenState extends State<MapaScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+  // --- O PAINEL DE "RADAR" (ESTADO DE BUSCA) ---
+  Widget _construirPainelBuscando() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 20, offset: const Offset(0, -5))],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Animação de Procura
+              const SizedBox(
+                height: 80,
+                width: 80,
+                child: CircularProgressIndicator(
+                  color: AppColors.primaryColor,
+                  strokeWidth: 4,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'A procurar especialista em\n$_categoriaSelecionada...',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Isto costuma demorar menos de 1 minuto.',
+                style: TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 32),
+              
+              // Botão de Cancelar
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.error),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: () {
+                    // Aqui futuramente vais bater na API para cancelar o chamado
+                    setState(() {
+                      _isProcurando = false;
+                      _categoriaSelecionada = null; // Reseta a escolha
+                    });
+                  },
+                  child: const Text('CANCELAR PEDIDO', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.error)),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
