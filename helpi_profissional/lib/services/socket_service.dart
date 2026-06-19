@@ -1,6 +1,7 @@
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:geolocator/geolocator.dart';
 import '../core/config/env.dart';
+import '../core/services/location_service.dart';
 
 class SocketService {
   static final SocketService _instance = SocketService._internal();
@@ -29,17 +30,12 @@ class SocketService {
       double? lat;
       double? lng;
       
-      // Tenta apanhar o GPS real se tiver permissão
+      // Import do location_service.dart deverá estar no topo (vou garantir isto adicionando manualmente).
+      // Tenta apanhar o GPS real se tiver permissão usando o LocationService igual ao do cliente
       try {
-        LocationPermission permission = await Geolocator.checkPermission();
-        if (permission == LocationPermission.denied) {
-          permission = await Geolocator.requestPermission();
-        }
-        if (permission == LocationPermission.whileInUse || permission == LocationPermission.always) {
-          Position position = await Geolocator.getCurrentPosition();
-          lat = position.latitude;
-          lng = position.longitude;
-        }
+        Position position = await LocationService.obterLocalizacaoAtual();
+        lat = position.latitude;
+        lng = position.longitude;
       } catch (e) {
         print("Aviso: GPS não disponível: $e");
         // Em ambiente de testes, podemos passar um dummy de SP
