@@ -4,8 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "pm2-runtime start ecosystem.config.js",
     "dev": "npx nodemon src/server.js",
-    "test": "jest"
+    "test": "jest",
+    "migrate": "knex migrate:latest",
+    "migrate:make": "knex migrate:make",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down"
   },
   "keywords": [],
   "author": "",
@@ -13,14 +18,17 @@
   "type": "commonjs",
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "compression": "^1.8.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
+    "knex": "^3.2.10",
     "morgan": "^1.11.0",
     "pg": "^8.21.0",
+    "pm2": "^7.0.1",
     "socket.io": "^4.8.3",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1",

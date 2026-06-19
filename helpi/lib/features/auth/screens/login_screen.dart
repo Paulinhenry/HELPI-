@@ -47,15 +47,15 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _carregando = true);
 
     try {
-      // A tela apenas chama o serviço e espera o Token
-      final token = await _authService.loginCliente(
+      // A tela apenas chama o serviço e espera o map com os tokens
+      final tokens = await _authService.loginCliente(
         _emailController.text.trim(),
         _senhaController.text.trim(),
       );
 
-      if (token != null && mounted) {
-        // Envia o token para o AuthProvider. O Consumer no main.dart abre o Mapa!
-        await context.read<AuthProvider>().login(token);
+      if (tokens != null && mounted) {
+        // Envia os tokens para o AuthProvider. O Consumer no main.dart abre o Mapa!
+        await context.read<AuthProvider>().login(tokens['access_token']!, tokens['refresh_token']!);
       }
     } catch (e) {
       if (mounted) {

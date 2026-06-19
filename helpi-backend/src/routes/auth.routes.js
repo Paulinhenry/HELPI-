@@ -1,7 +1,8 @@
 // =============================================================
-// HELPI - Rotas de Autenticação (Login)
-// POST /api/login/clientes     → Login de cliente
-// POST /api/login/profissionais → Login de profissional
+// HELPI - Rotas de Autenticação (Login + Refresh)
+// POST /api/login/clientes       → Login de cliente
+// POST /api/login/profissionais  → Login de profissional
+// POST /api/auth/refresh         → Renovar access token
 // =============================================================
 
 const express = require('express');
@@ -18,6 +19,17 @@ const loginLimiter = rateLimit({
     legacyHeaders: false,
     message: {
         erro: 'Muitas tentativas de login. Tente novamente em 15 minutos.'
+    },
+});
+
+// Rate limiter para refresh (mais permissivo — 30 req/min)
+const refreshLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        erro: 'Muitas tentativas de refresh. Tente novamente em 1 minuto.'
     },
 });
 
@@ -47,7 +59,7 @@ const loginLimiter = rateLimit({
  *                 example: "minhasenha123"
  *     responses:
  *       '200':
- *         description: Login bem-sucedido — retorna token JWT
+ *         description: Login bem-sucedido — retorna access_token e refresh_token
  *       '400':
  *         description: Campos de login inválidos
  *       '401':
@@ -79,16 +91,43 @@ const loginLimiter = rateLimit({
  *                 example: "minhasenha123"
  *     responses:
  *       '200':
- *         description: Login bem-sucedido — retorna token JWT
+ *         description: Login bem-sucedido — retorna access_token e refresh_token
  *       '400':
  *         description: Campos de login inválidos
  *       '401':
  *         description: Email ou senha incorretos
+ *       '403':
+ *         description: Conta não aprovada
  *       '429':
  *         description: Muitas tentativas — rate limit atingido
+ *
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Renovar access token
+ *     tags: [Autenticação]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refresh_token
+ *             properties:
+ *               refresh_token:
+ *                 type: string
+ *                 description: O refresh token obtido no login
+ *     responses:
+ *       '200':
+ *         description: Novo access_token gerado
+ *       '400':
+ *         description: Refresh token não fornecido
+ *       '401':
+ *         description: Refresh token inválido ou expirado
  */
 
 router.post('/login/clientes', loginLimiter, validarLogin, authController.loginCliente);
 router.post('/login/profissionais', loginLimiter, validarLogin, authController.loginProfissional);
+router.post('/auth/refresh', refreshLimiter, authController.refreshToken);
 
 module.exports = router;

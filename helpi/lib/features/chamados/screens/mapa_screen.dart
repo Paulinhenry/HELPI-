@@ -8,6 +8,8 @@ import '../../../core/services/location_service.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_colors.dart';
 
+import '../services/chamados_service.dart';
+
 class MapaScreen extends StatefulWidget {
   const MapaScreen({super.key});
 
@@ -19,16 +21,18 @@ class _MapaScreenState extends State<MapaScreen> {
   GoogleMapController? mapController;
   Position? _posicaoAtual;
   bool _carregando = true;
+  bool _solicitando = false;
+  final ChamadosService _chamadosService = ChamadosService();
 
   // --- DADOS DA INTERFACE DO HELPI ---
   String? _categoriaSelecionada; // Guarda o que o cliente escolheu
 
   // Catálogo rápido de emergências (Mentalidade Uber)
   final List<Map<String, dynamic>> _categorias = [
-    {'nome': 'Elétrica', 'icone': Icons.electrical_services, 'cor': Colors.orange},
-    {'nome': 'Hidráulica', 'icone': Icons.plumbing, 'cor': Colors.blue},
+    {'nome': 'Eletricista', 'icone': Icons.electrical_services, 'cor': Colors.orange},
+    {'nome': 'Encanador', 'icone': Icons.plumbing, 'cor': Colors.blue},
     {'nome': 'Chaveiro', 'icone': Icons.key, 'cor': Colors.amber},
-    {'nome': 'Limpeza', 'icone': Icons.cleaning_services, 'cor': Colors.teal},
+    {'nome': 'Faxina', 'icone': Icons.cleaning_services, 'cor': Colors.teal},
     {'nome': 'Montador', 'icone': Icons.handyman, 'cor': Colors.blueGrey},
   ];
 
@@ -60,14 +64,42 @@ class _MapaScreenState extends State<MapaScreen> {
   }
 
   // Função que será chamada quando o cliente clicar em "Solicitar"
-  void _solicitarProfissional() {
-    // Aqui vai entrar a chamada para a sua API (POST /api/chamados)
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Buscando $_categoriaSelecionada próximo a você...'),
-        backgroundColor: AppColors.success,
-      ),
-    );
+  Future<void> _solicitarProfissional() async {
+    if (_posicaoAtual == null || _categoriaSelecionada == null) return;
+
+    setState(() => _solicitando = true);
+
+    try {
+      await _chamadosService.criarChamado(
+        categoria: _categoriaSelecionada!,
+        descricao: 'Preciso de um $_categoriaSelecionada urgente!', // Poderia ter um input de texto aqui
+        latitude: _posicaoAtual!.latitude,
+        longitude: _posicaoAtual!.longitude,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Buscando $_categoriaSelecionada próximo a você...'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        // Aqui mudaria para o status "Buscando..." ou "A caminho" na interface
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _solicitando = false);
+      }
+    }
   }
 
   @override

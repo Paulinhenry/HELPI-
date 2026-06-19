@@ -94,10 +94,40 @@ const { validarCadastroProfissional } = require('../middlewares/validators/profi
  *         description: Dados do profissional
  *       '404':
  *         description: Profissional não encontrado
+ *
+ * /api/profissionais/perfil:
+ *   put:
+ *     summary: Atualizar perfil do profissional autenticado
+ *     tags:
+ *       - Profissionais
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               nome:
+ *                 type: string
+ *               telefone:
+ *                 type: string
+ *               biografia:
+ *                 type: string
+ *               taxa_visita:
+ *                 type: number
+ *     responses:
+ *       '200':
+ *         description: Perfil atualizado
+ *       '401':
+ *         description: Token inválido
  */
+
+const authProfissional = require('../middlewares/authProfissional');
 
 router.get('/', profissionaisController.listarProfissionais);
 router.get('/:id', profissionaisController.verProfissional);
 router.post('/', validarCadastroProfissional, profissionaisController.registarProfissional);
+router.put('/perfil', authProfissional, profissionaisController.atualizarPerfil);
 
 module.exports = router;

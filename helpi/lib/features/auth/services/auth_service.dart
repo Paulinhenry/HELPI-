@@ -5,9 +5,9 @@ class AuthService {
   // O motor de rede profissional que resolve o Localhost e o Interceptor JWT
   final ApiClient _apiClient = ApiClient();
 
-  /// Efetua login de um cliente na API e devolve o Token JWT.
+  /// Efetua login de um cliente na API e devolve os Tokens JWT.
   /// Lança uma Exception com mensagem amigável se falhar.
-  Future<String?> loginCliente(String email, String senha) async {
+  Future<Map<String, String>?> loginCliente(String email, String senha) async {
     try {
       // Chamada limpa: sem localhost, sem jsonEncode — o Dio trata de tudo
       final response = await _apiClient.dio.post(
@@ -19,7 +19,10 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        return response.data['token']; // Devolve o token JWT
+        return {
+          'access_token': response.data['access_token'],
+          'refresh_token': response.data['refresh_token'],
+        };
       }
       return null;
     } on DioException catch (e) {
