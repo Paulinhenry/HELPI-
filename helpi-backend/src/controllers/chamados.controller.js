@@ -55,13 +55,7 @@ const criarChamado = async (req, res, next) => {
             categoria_solicitada
         ]);
 
-        if (busca.rows.length === 0) {
-            await client.query('ROLLBACK');
-            return res.status(404).json({
-                erro: `Pedimos desculpa! Não há nenhum ${categoria_solicitada} disponível num raio de 10km neste exato momento.`
-            });
-        }
-
+        // 1. AGORA NÓS GRAVAMOS SEMPRE NA BASE DE DADOS PRIMEIRO!
         const novoChamado = await client.query(
             `INSERT INTO chamados_express
             (cliente_id, categoria_solicitada, problema_descricao, latitude_destino, longitude_destino, status)
@@ -70,7 +64,18 @@ const criarChamado = async (req, res, next) => {
             [cliente_id, categoria_solicitada, problema_descricao, latitude_destino, longitude_destino]
         );
 
+        // Confirma a gravação no PostGIS (Agora sim, vai aparecer no DBeaver/pgAdmin!)
         await client.query('COMMIT');
+
+        // 2. SE NÃO HOUVER NINGUÉM NUM RAIO DE 10KM, AVISAMOS O SISTEMA
+        if (busca.rows.length === 0) {
+            logger.info(`Chamado criado em espera: ${novoChamado.rows[0].id} (Sem prof. próximos)`);
+            return res.status(201).json({
+                mensagem: "Chamado criado com sucesso (em espera). Não há profissionais num raio de 10km no momento.",
+                chamado: novoChamado.rows[0],
+                profissionais_notificados: 0
+            });
+        }
 
         // ── WEBSOCKET: Notifica apenas profissionais próximos (rooms) ──
         const io = req.app.get('io');

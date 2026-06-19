@@ -4,7 +4,7 @@ import '../../../core/network/app_client.dart';
 class ChamadosService {
   final ApiClient _apiClient = ApiClient();
 
-  Future<void> criarChamado({
+  Future<String> criarChamado({
     required String categoria,
     required String descricao,
     required double latitude,
@@ -22,7 +22,7 @@ class ChamadosService {
       );
 
       if (response.statusCode == 201) {
-        return; // Sucesso
+        return response.data['chamado']['id'].toString();
       } else {
         throw Exception('Erro ao criar chamado. Tente novamente.');
       }
