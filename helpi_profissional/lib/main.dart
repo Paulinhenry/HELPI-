@@ -12,7 +12,8 @@ import 'services/socket_service.dart'; // O ficheiro que te dei na resposta ante
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final authProvider = AuthProvider();
-  await authProvider.checkLoginStatus(); // Vai ver se a sessão já existe na memória
+  await authProvider
+      .checkLoginStatus(); // Vai ver se a sessão já existe na memória
 
   runApp(
     MultiProvider(
@@ -67,25 +68,30 @@ class _RadarScreenState extends State<RadarScreen> {
     if (_isOnline) {
       // Impede o ecrã de desligar enquanto estiver à espera de pedidos
       WakelockPlus.enable();
-      
+
       // LIGA O RADAR COM O ID REAL DA TUA BASE DE DADOS POSTGRESQL!
-      _socketService.ligarRadar(widget.profissionalId, _mostrarAlertaDeTrabalho);
+      _socketService.ligarRadar(
+        widget.profissionalId,
+        _mostrarAlertaDeTrabalho,
+      );
     } else {
       // Permite que o ecrã volte a desligar normalmente
       WakelockPlus.disable();
-      
+
       _socketService.desligarRadar();
     }
   }
 
   void _mostrarAlertaDeTrabalho(Map<String, dynamic> dados) async {
-    // 🔊 Toca o som padrão de notificação do telemóvel
-    FlutterRingtonePlayer().playNotification();
-    
+    // 🔊 Toca o alarme do telemóvel (ignora o modo silencioso e toca alto)
+    FlutterRingtonePlayer().playAlarm();
+
     // 📳 Faz o telemóvel vibrar
     bool? hasVibrator = await Vibration.hasVibrator();
     if (hasVibrator == true) {
-      Vibration.vibrate(pattern: [500, 1000, 500, 1000]); // Vibra, Pausa, Vibra, Pausa
+      Vibration.vibrate(
+        pattern: [500, 1000, 500, 1000],
+      ); // Vibra, Pausa, Vibra, Pausa
     }
 
     if (!mounted) return;
@@ -94,25 +100,37 @@ class _RadarScreenState extends State<RadarScreen> {
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('🚨 NOVO SERVIÇO!', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Text('Categoria: ${dados['categoria']}\nProblema: ${dados['descricao']}\nDistância: ${dados['distancia_metros']}m'),
+        title: const Text(
+          '🚨 NOVO SERVIÇO!',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Categoria: ${dados['categoria']}\nProblema: ${dados['descricao']}\nDistância: ${dados['distancia_metros']}m',
+        ),
         actions: [
           TextButton(
-             onPressed: () {
-               FlutterRingtonePlayer().stop(); // Para o som se ainda estiver a tocar
-               Navigator.pop(context);
-             },
-             child: const Text('RECUSAR', style: TextStyle(color: Colors.red))
+            onPressed: () {
+              FlutterRingtonePlayer()
+                  .stop(); // Para o som se ainda estiver a tocar
+              Navigator.pop(context);
+            },
+            child: const Text('RECUSAR', style: TextStyle(color: Colors.red)),
           ),
           ElevatedButton(
-             onPressed: () {
-               FlutterRingtonePlayer().stop();
-               Navigator.pop(context);
-               // TODO: Logica de aceitar o serviço (chamada API PUT /aceitar)
-             },
-             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-             child: const Text('ACEITAR', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
-          )
+            onPressed: () {
+              FlutterRingtonePlayer().stop();
+              Navigator.pop(context);
+              // TODO: Logica de aceitar o serviço (chamada API PUT /aceitar)
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text(
+              'ACEITAR',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -135,30 +153,36 @@ class _RadarScreenState extends State<RadarScreen> {
               _socketService.desligarRadar();
               context.read<AuthProvider>().logout();
             },
-          )
+          ),
         ],
       ),
       body: Center(
         child: GestureDetector(
           onTap: _toggleModoTrabalho,
           child: Container(
-            width: 200, height: 200,
+            width: 200,
+            height: 200,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: _isOnline ? Colors.blue : Colors.grey[800],
               boxShadow: [
                 BoxShadow(
-                  color: (_isOnline ? Colors.blue : Colors.grey[800]!).withOpacity(0.5),
+                  color: (_isOnline ? Colors.blue : Colors.grey[800]!)
+                      .withOpacity(0.5),
                   blurRadius: 20,
                   spreadRadius: 5,
-                )
-              ]
+                ),
+              ],
             ),
             child: Center(
               child: Text(
                 _isOnline ? 'FICAR\nOFFLINE' : 'FICAR\nONLINE',
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
