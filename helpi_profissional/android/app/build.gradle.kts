@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.helpi_profissional"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -23,6 +23,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        targetSdk = 36
     }
 
     buildTypes {

@@ -4,6 +4,10 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>A aplicação precisa do seu GPS para encontrar serviços próximos de si.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>A aplicação precisa do seu GPS para receber serviços em segundo plano.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

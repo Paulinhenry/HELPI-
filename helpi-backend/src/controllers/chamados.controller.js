@@ -27,6 +27,18 @@ const criarChamado = async (req, res, next) => {
             longitude_destino
         } = req.body;
 
+        // Mapeamento de categorias Cliente -> Profissional
+        const mapaCategorias = {
+            'Elétrica': 'Eletricista',
+            'Hidráulica': 'Encanador',
+            'Chaveiro': 'Chaveiro',
+            'Limpeza': 'Limpeza',
+            'Montador': 'Montador'
+        };
+        // Tenta usar o mapeamento, ignora case
+        const catSoli = categoria_solicitada;
+        const categoriaMapeada = mapaCategorias[catSoli] || catSoli;
+
         // ── POSTIGS: Busca espacial com índice GiST (O(log n)) ──
         // ST_DWithin usa o índice GIST automaticamente (vs Haversine que faz full table scan)
         const queryProfissionaisProximos = `
@@ -37,7 +49,7 @@ const criarChamado = async (req, res, next) => {
                 ) / 1000 AS distancia_km
             FROM profissionais
             WHERE is_online = true
-              AND categoria = $3
+              AND LOWER(categoria) = LOWER($3)
               AND status = 'aprovado'
               AND coordenadas IS NOT NULL
               AND ST_DWithin(
@@ -52,7 +64,7 @@ const criarChamado = async (req, res, next) => {
         const busca = await client.query(queryProfissionaisProximos, [
             latitude_destino,
             longitude_destino,
-            categoria_solicitada
+            categoriaMapeada
         ]);
 
         // 1. AGORA NÓS GRAVAMOS SEMPRE NA BASE DE DADOS PRIMEIRO!
