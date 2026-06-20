@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:vibration/vibration.dart';
+import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 // Importa os teus ficheiros
 import 'core/providers/auth_provider.dart';
@@ -62,31 +65,53 @@ class _RadarScreenState extends State<RadarScreen> {
     setState(() => _isOnline = !_isOnline);
 
     if (_isOnline) {
+      // Impede o ecrã de desligar enquanto estiver à espera de pedidos
+      WakelockPlus.enable();
+      
       // LIGA O RADAR COM O ID REAL DA TUA BASE DE DADOS POSTGRESQL!
       _socketService.ligarRadar(widget.profissionalId, _mostrarAlertaDeTrabalho);
     } else {
+      // Permite que o ecrã volte a desligar normalmente
+      WakelockPlus.disable();
+      
       _socketService.desligarRadar();
     }
   }
 
-  void _mostrarAlertaDeTrabalho(Map<String, dynamic> dados) {
+  void _mostrarAlertaDeTrabalho(Map<String, dynamic> dados) async {
+    // 🔊 Toca o som padrão de notificação do telemóvel
+    FlutterRingtonePlayer().playNotification();
+    
+    // 📳 Faz o telemóvel vibrar
+    bool? hasVibrator = await Vibration.hasVibrator();
+    if (hasVibrator == true) {
+      Vibration.vibrate(pattern: [500, 1000, 500, 1000]); // Vibra, Pausa, Vibra, Pausa
+    }
+
+    if (!mounted) return;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('🚨 NOVO SERVIÇO!'),
+        title: const Text('🚨 NOVO SERVIÇO!', style: TextStyle(fontWeight: FontWeight.bold)),
         content: Text('Categoria: ${dados['categoria']}\nProblema: ${dados['descricao']}\nDistância: ${dados['distancia_metros']}m'),
         actions: [
           TextButton(
-             onPressed: () => Navigator.pop(context),
+             onPressed: () {
+               FlutterRingtonePlayer().stop(); // Para o som se ainda estiver a tocar
+               Navigator.pop(context);
+             },
              child: const Text('RECUSAR', style: TextStyle(color: Colors.red))
           ),
           ElevatedButton(
              onPressed: () {
+               FlutterRingtonePlayer().stop();
                Navigator.pop(context);
                // TODO: Logica de aceitar o serviço (chamada API PUT /aceitar)
              },
-             child: const Text('ACEITAR')
+             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+             child: const Text('ACEITAR', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
           )
         ],
       ),

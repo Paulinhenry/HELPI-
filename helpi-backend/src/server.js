@@ -44,6 +44,49 @@ io.on('connection', (socket) => {
             }
             
             console.log(`[Radar] 👷 Profissional ID ${profissional_id} está ONLINE e pronto a receber pedidos.`);
+
+            // --- NOVO: VERIFICAR CHAMADOS PENDENTES QUE ELE PERDEU ---
+            if (latitude && longitude) {
+                const queryChamados = `
+                    SELECT c.id, c.categoria_solicitada, c.problema_descricao,
+                           ST_Distance(
+                               ST_SetSRID(ST_MakePoint(c.longitude_destino, c.latitude_destino), 4326)::geography,
+                               ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+                           ) / 1000 AS distancia_km
+                    FROM chamados_express c
+                    CROSS JOIN (SELECT categoria FROM profissionais WHERE id = $3) p
+                    WHERE c.status = 'procurando_profissional'
+                      AND LOWER(c.categoria_solicitada) = LOWER(
+                          CASE 
+                              WHEN p.categoria = 'Eletricista' THEN 'Elétrica'
+                              WHEN p.categoria = 'Encanador' THEN 'Hidráulica'
+                              WHEN p.categoria = 'Chaveiro' THEN 'Chaveiro'
+                              WHEN p.categoria = 'Limpeza' THEN 'Limpeza'
+                              WHEN p.categoria = 'Montador' THEN 'Montador'
+                              ELSE p.categoria
+                          END
+                      )
+                      AND ST_DWithin(
+                          ST_SetSRID(ST_MakePoint(c.longitude_destino, c.latitude_destino), 4326)::geography,
+                          ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
+                          10000
+                      )
+                `;
+                const { rows: chamadosAtivos } = await pool.query(queryChamados, [longitude, latitude, profissional_id]);
+                
+                if (chamadosAtivos.length > 0) {
+                    console.log(`[Radar] Encontrado(s) ${chamadosAtivos.length} chamado(s) pendente(s) para o Profissional ${profissional_id}`);
+                    chamadosAtivos.forEach(chamado => {
+                        socket.emit('novo_chamado_emergencia', {
+                            chamado_id: chamado.id,
+                            categoria: chamado.categoria_solicitada,
+                            descricao: chamado.problema_descricao,
+                            distancia_metros: Math.round(chamado.distancia_km * 1000),
+                            valor_sugerido: 40.00
+                        });
+                    });
+                }
+            }
         } catch (error) {
             console.error(`Erro ao colocar profissional online:`, error);
         }
