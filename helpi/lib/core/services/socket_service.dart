@@ -10,12 +10,13 @@ class SocketService {
   io.Socket? _socket;
 
   io.Socket? get socket => _socket;
+  bool get isConnected => _socket != null && _socket!.connected;
 
-  void conectar() {
+  /// Conecta ao servidor WebSocket e junta-se à sala do cliente
+  void conectar(String clienteId) {
     if (_socket != null && _socket!.connected) return;
 
     // A URL do Env.baseUrl geralmente tem '/api/v1'. Precisamos apenas da raiz.
-    // Ex: 'http://192.168.3.94:3000/api/v1' -> 'http://192.168.3.94:3000'
     String serverUrl = Env.baseUrl.split('/api/v1').first;
 
     _socket = io.io(serverUrl, io.OptionBuilder()
@@ -27,18 +28,33 @@ class SocketService {
     _socket!.connect();
 
     _socket!.onConnect((_) {
-      print('[Socket] Conectado ao servidor: ${_socket!.id}');
+      print('[Socket Cliente] Conectado ao servidor: ${_socket!.id}');
+      // Junta-se à sala do cliente para receber notificações direcionadas
+      _socket!.emit('entrar_sala_cliente', {'cliente_id': clienteId});
     });
 
     _socket!.onDisconnect((_) {
-      print('[Socket] Desconectado do servidor');
+      print('[Socket Cliente] Desconectado do servidor');
     });
   }
 
-  void ficarOnline(String profissionalId) {
-    if (_socket != null && _socket!.connected) {
-      _socket!.emit('ficar_online', {'profissional_id': profissionalId});
-    }
+  /// Escuta atualizações do chamado (profissional aceitou, chegou, finalizou)
+  void ouvirAtualizacoesChamado(Function(Map<String, dynamic>) onAtualizacao) {
+    if (_socket == null) return;
+
+    // Remove listener antigo para evitar duplicação
+    _socket!.off('atualizacao_chamado');
+
+    _socket!.on('atualizacao_chamado', (data) {
+      print('[Socket Cliente] 📩 Atualização recebida: $data');
+      final Map<String, dynamic> mapa = Map<String, dynamic>.from(data);
+      onAtualizacao(mapa);
+    });
+  }
+
+  /// Para de escutar atualizações
+  void pararDeOuvir() {
+    _socket?.off('atualizacao_chamado');
   }
 
   void desconectar() {

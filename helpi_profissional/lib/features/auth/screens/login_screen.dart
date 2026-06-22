@@ -15,6 +15,28 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
 
   Future<void> _fazerLogin() async {
+    // Validação local antes de enviar ao servidor
+    if (_emailController.text.trim().isEmpty || _senhaController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preencha todos os campos'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    if (!_emailController.text.contains('@') || !_emailController.text.contains('.')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('E-mail inválido'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    if (_senhaController.text.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Senha deve ter pelo menos 6 caracteres'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       await context.read<AuthProvider>().login(
@@ -23,9 +45,11 @@ class _LoginScreenState extends State<LoginScreen> {
       );
       // Se tiver sucesso, o main.dart vai mudar de ecrã sozinho
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', '')), backgroundColor: Colors.red),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

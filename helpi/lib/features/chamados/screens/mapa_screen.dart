@@ -54,6 +54,7 @@ class _MapaScreenState extends State<MapaScreen> {
   @override
   void dispose() {
     _cooldownTimer?.cancel(); // Limpa o timer da memória para evitar vazamento de dados
+    mapController?.dispose(); // Libera o controlador do Google Maps
     super.dispose();
   }
 
@@ -98,8 +99,8 @@ class _MapaScreenState extends State<MapaScreen> {
         });
       }
     } catch (e) {
-      setState(() => _carregando = false);
       if (mounted) {
+        setState(() => _carregando = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString()), backgroundColor: AppColors.error),
         );
@@ -119,24 +120,39 @@ class _MapaScreenState extends State<MapaScreen> {
 
     _cooldownTimer?.cancel();
     _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) return;
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
 
-      setState(() {
-        if (_segundosRestantes > 0) {
+      if (_segundosRestantes > 0) {
+        setState(() {
           _segundosRestantes--;
-        } else {
-          // O tempo esgotou! Nenhum profissional aceitou
-          _finalizarBuscaPorTimeout();
-        }
-      });
+        });
+      } else {
+        // O tempo esgotou! Cancela o timer ANTES de processar
+        timer.cancel();
+        _finalizarBuscaPorTimeout();
+      }
     });
   }
 
   // Executado automaticamente quando os 1:30 minutos acabam
   void _finalizarBuscaPorTimeout() {
     _cooldownTimer?.cancel();
+
+    // CORREÇÃO: Cancela o chamado no servidor para não ficar pendente eternamente
+    if (_idChamadoAtual != null) {
+      _chamadosService.cancelarChamado(_idChamadoAtual!).catchError((e) {
+        debugPrint('Aviso: falha ao cancelar chamado no timeout: $e');
+      });
+    }
+
+    if (!mounted) return;
+
     setState(() {
       _isProcurando = false;
+      _idChamadoAtual = null;
     });
 
     // Abre um feedback visual premium informando que ninguém foi encontrado

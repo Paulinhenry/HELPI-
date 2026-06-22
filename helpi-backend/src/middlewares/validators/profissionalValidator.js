@@ -9,6 +9,9 @@ const { AppError } = require('../errorHandler');
 const CATEGORIAS_VALIDAS = [
     'Eletricista',
     'Encanador',
+    'Chaveiro',
+    'Limpeza',
+    'Montador',
     'Pintor',
     'Pedreiro',
     'Marceneiro',

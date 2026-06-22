@@ -146,8 +146,18 @@ const refreshToken = async (req, res, next) => {
             });
         }
 
-        // Verifica se o usuário ainda existe no banco
-        const tabela = decoded.tipo === 'cliente' ? 'clientes' : 'profissionais';
+        // SEGURANÇA: Whitelist de tabelas (evita SQL injection via JWT comprometido)
+        let tabela;
+        if (decoded.tipo === 'cliente') {
+            tabela = 'clientes';
+        } else if (decoded.tipo === 'profissional') {
+            tabela = 'profissionais';
+        } else {
+            return res.status(401).json({
+                erro: 'Tipo de utilizador inválido no token.'
+            });
+        }
+
         const resultado = await pool.query(`SELECT id FROM ${tabela} WHERE id = $1`, [decoded.id]);
 
         if (resultado.rows.length === 0) {
