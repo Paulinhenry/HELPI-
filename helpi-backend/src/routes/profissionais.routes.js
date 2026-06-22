@@ -126,8 +126,9 @@ const { validarCadastroProfissional } = require('../middlewares/validators/profi
 const authProfissional = require('../middlewares/authProfissional');
 
 router.get('/', profissionaisController.listarProfissionais);
-router.get('/:id', profissionaisController.verProfissional);
 router.post('/', validarCadastroProfissional, profissionaisController.registarProfissional);
 router.put('/perfil', authProfissional, profissionaisController.atualizarPerfil);
+// IMPORTANTE: Rota com parâmetro (:id) deve vir DEPOIS das rotas fixas
+router.get('/:id', profissionaisController.verProfissional);
 
 module.exports = router;

@@ -7,22 +7,23 @@ const pool = require('../config/database');
 const logger = require('../utils/logger');
 
 const criarAvaliacao = async (req, res, next) => {
+    const { chamado_id, nota, comentario } = req.body;
+    // SEGURANÇA: O cliente_id vem do token JWT, não do body
+    const cliente_id_logado = req.usuario.id;
+
+    // Validações ANTES de obter conexão do pool (evita desperdício de conexões)
+    if (!nota || nota < 1 || nota > 5) {
+        return res.status(400).json({ erro: "A nota deve ser um número inteiro entre 1 e 5." });
+    }
+
+    if (!chamado_id) {
+        return res.status(400).json({ erro: "O ID do chamado é obrigatório." });
+    }
+
     // Usa uma transação para garantir atomicidade (INSERT + UPDATE juntos)
     const client = await pool.connect();
 
     try {
-        const { chamado_id, nota, comentario } = req.body;
-        // SEGURANÇA: O cliente_id vem do token JWT, não do body
-        const cliente_id_logado = req.usuario.id;
-
-        if (!nota || nota < 1 || nota > 5) {
-            return res.status(400).json({ erro: "A nota deve ser um número inteiro entre 1 e 5." });
-        }
-
-        if (!chamado_id) {
-            return res.status(400).json({ erro: "O ID do chamado é obrigatório." });
-        }
-
         const verChamado = await client.query(
             'SELECT cliente_id, profissional_id, status FROM chamados_express WHERE id = $1',
             [chamado_id]

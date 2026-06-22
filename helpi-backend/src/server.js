@@ -4,11 +4,16 @@ const { Server } = require('socket.io');
 
 const PORT = process.env.PORT || 3000;
 
+// Configuração de CORS por ambiente (igual ao Express)
+const corsOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+    : ['*'];
+
 // 1. Criamos o servidor HTTP e anexamos o Socket.io a ele
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "*", // Permite conexões de qualquer app
+        origin: process.env.NODE_ENV === 'production' ? corsOrigins : '*',
         methods: ["GET", "POST", "PATCH"]
     }
 });
@@ -23,10 +28,26 @@ const profissionaisConectados = new Map();
 io.on('connection', (socket) => {
     console.log(`[Socket.io] 🟢 Novo dispositivo conectado: ${socket.id}`);
 
+    // Quando o app do cliente conecta, junta-se à sala do cliente para receber notificações
+    socket.on('entrar_sala_cliente', (dados) => {
+        const { cliente_id } = dados;
+        if (cliente_id) {
+            socket.join(`cliente:${cliente_id}`);
+            console.log(`[Socket.io] 📱 Cliente ${cliente_id} entrou na sala de notificações.`);
+        }
+    });
+
     // Quando o telemóvel do trabalhador abrir a app e clicar "Estou online!"
     socket.on('ficar_online', async (dados) => {
         try {
             const { profissional_id, latitude, longitude } = dados;
+
+            // CORREÇÃO: Limpa socket antigo se o profissional reconectar com novo socket
+            const socketAntigo = profissionaisConectados.get(profissional_id);
+            if (socketAntigo && socketAntigo !== socket.id) {
+                console.log(`[Radar] Profissional ${profissional_id} reconectou (socket antigo: ${socketAntigo})`);
+            }
+
             profissionaisConectados.set(profissional_id, socket.id);
             
             // Atualiza o status e as coordenadas do GPS na Base de Dados para o PostGIS conseguir encontrá-lo

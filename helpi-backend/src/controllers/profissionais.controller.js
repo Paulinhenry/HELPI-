@@ -16,7 +16,7 @@ const SALT_ROUNDS = 12;
 // ─── LISTAR PROFISSIONAIS (COM PAGINAÇÃO) ───────────────────
 const listarProfissionais = async (req, res, next) => {
     try {
-        const { categoria, cursor, limit = 20 } = req.query;
+        const { categoria, cursor, cursor_id, limit = 20 } = req.query;
         const limitNum = Math.min(parseInt(limit, 10) || 20, 50); // Max 50 por página
 
         let query = `
@@ -33,25 +33,27 @@ const listarProfissionais = async (req, res, next) => {
             paramIndex++;
         }
 
-        if (cursor) {
-            query += ` AND avaliacao <= $${paramIndex}`;
-            valores.push(cursor);
-            paramIndex++;
+        // Paginação com cursor composto (avaliacao + id) para evitar duplicatas
+        if (cursor && cursor_id) {
+            query += ` AND (avaliacao, id) < ($${paramIndex}, $${paramIndex + 1})`;
+            valores.push(cursor, cursor_id);
+            paramIndex += 2;
         }
 
-        query += ` ORDER BY avaliacao DESC LIMIT $${paramIndex}`;
+        query += ` ORDER BY avaliacao DESC, id DESC LIMIT $${paramIndex}`;
         valores.push(limitNum + 1);
 
         const resultado = await pool.query(query, valores);
         const hasMore = resultado.rows.length > limitNum;
         const profissionais = hasMore ? resultado.rows.slice(0, limitNum) : resultado.rows;
-        const nextCursor = hasMore ? profissionais[profissionais.length - 1].avaliacao : null;
+        const ultimo = profissionais.length > 0 ? profissionais[profissionais.length - 1] : null;
 
         res.json({
             profissionais,
             paginacao: {
                 total_retornado: profissionais.length,
-                proximo_cursor: nextCursor,
+                proximo_cursor: hasMore && ultimo ? ultimo.avaliacao : null,
+                proximo_cursor_id: hasMore && ultimo ? ultimo.id : null,
                 tem_mais: hasMore
             }
         });
