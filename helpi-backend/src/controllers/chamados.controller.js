@@ -171,7 +171,9 @@ const aceitarChamado = async (req, res, next) => {
                  profissional_id = $1,
                  aceite_em = CURRENT_TIMESTAMP
              WHERE id = $2
-             RETURNING id, status, profissional_id, cliente_id, aceite_em`,
+             RETURNING id, status, profissional_id, cliente_id, aceite_em,
+                       latitude_destino, longitude_destino,
+                       categoria_solicitada, problema_descricao`,
             [profissional_id, id]
         );
 
