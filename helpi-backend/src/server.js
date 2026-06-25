@@ -2,6 +2,7 @@ const app = require('./app');
 const http = require('http');
 const { Server } = require('socket.io');
 const logger = require('./utils/logger');
+const { TAXA_DESLOCAMENTO, MAPA_CATEGORIAS } = require('./utils/constants');
 
 const PORT = process.env.PORT || 3000;
 
@@ -78,15 +79,13 @@ io.on('connection', (socket) => {
                     FROM chamados_express c
                     CROSS JOIN (SELECT categoria FROM profissionais WHERE id = $3) p
                     WHERE c.status = 'procurando_profissional'
-                      AND LOWER(c.categoria_solicitada) = LOWER(
-                          CASE 
-                              WHEN p.categoria = 'Eletricista' THEN 'Elétrica'
-                              WHEN p.categoria = 'Encanador' THEN 'Hidráulica'
-                              WHEN p.categoria = 'Chaveiro' THEN 'Chaveiro'
-                              WHEN p.categoria = 'Limpeza' THEN 'Limpeza'
-                              WHEN p.categoria = 'Montador' THEN 'Montador'
-                              ELSE p.categoria
-                          END
+                      AND (
+                          (p.categoria = MAPA_CATEGORIAS['Elétrica'] AND LOWER(c.categoria_solicitada) = 'elétrica') OR
+                          (p.categoria = MAPA_CATEGORIAS['Hidráulica'] AND LOWER(c.categoria_solicitada) = 'hidráulica') OR
+                          (p.categoria = MAPA_CATEGORIAS['Chaveiro'] AND LOWER(c.categoria_solicitada) = 'chaveiro') OR
+                          (p.categoria = MAPA_CATEGORIAS['Limpeza'] AND LOWER(c.categoria_solicitada) = 'limpeza') OR
+                          (p.categoria = MAPA_CATEGORIAS['Montador'] AND LOWER(c.categoria_solicitada) = 'montador') OR
+                          (LOWER(c.categoria_solicitada) = LOWER(p.categoria))
                       )
                       AND ST_DWithin(
                           ST_SetSRID(ST_MakePoint(c.longitude_destino, c.latitude_destino), 4326)::geography,
@@ -104,7 +103,7 @@ io.on('connection', (socket) => {
                             categoria: chamado.categoria_solicitada,
                             descricao: chamado.problema_descricao,
                             distancia_metros: Math.round(chamado.distancia_km * 1000),
-                            valor_sugerido: 40.00
+                            valor_sugerido: TAXA_DESLOCAMENTO
                         });
                     });
                 }
