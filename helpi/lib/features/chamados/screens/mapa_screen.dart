@@ -7,6 +7,7 @@ import 'package:geocoding/geocoding.dart'; // <--- Nova importação para ler mo
 
 // Importações do Core
 import '../../../core/services/location_service.dart';
+import '../../../core/services/socket_service.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../services/chamados_service.dart';
@@ -49,6 +50,13 @@ class _MapaScreenState extends State<MapaScreen> {
   void initState() {
     super.initState();
     _buscarLocalizacao();
+    Future.microtask(() {
+      if (!mounted) return;
+      final authProvider = context.read<AuthProvider>();
+      if (authProvider.userId != null) {
+        SocketService().conectar(authProvider.userId!);
+      }
+    });
   }
 
   @override
@@ -140,6 +148,7 @@ class _MapaScreenState extends State<MapaScreen> {
   // Executado automaticamente quando os 1:30 minutos acabam
   void _finalizarBuscaPorTimeout() {
     _cooldownTimer?.cancel();
+    SocketService().pararDeOuvir();
 
     // CORREÇÃO: Cancela o chamado no servidor para não ficar pendente eternamente
     if (_idChamadoAtual != null) {
@@ -171,6 +180,7 @@ class _MapaScreenState extends State<MapaScreen> {
   Future<void> _cancelarBuscaManualmente() async {
     // 1. Pára o cronómetro imediatamente
     _cooldownTimer?.cancel();
+    SocketService().pararDeOuvir();
 
     // 2. Se temos um ID de chamado registado, avisamos o Node.js para o cancelar!
     if (_idChamadoAtual != null) {
@@ -207,6 +217,7 @@ class _MapaScreenState extends State<MapaScreen> {
 
     // Arranca o cronômetro visual imediatamente
     _iniciarContador();
+    SocketService().ouvirAtualizacoesChamado(_onAtualizacaoChamado);
 
     try {
       final chamadoId = await _chamadosService.criarChamado(
@@ -526,5 +537,80 @@ class _MapaScreenState extends State<MapaScreen> {
         ],
       ),
     );
+  }
+
+  // --- PAINEL DE SUCESSO (SUSPIRO DE ALÍVIO) ---
+  Widget _construirPainelSucesso({required String nome, required String distancia}) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: Colors.green[50], shape: BoxShape.circle),
+            child: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 40),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            '$nome está a caminho!',
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Suspiro de alívio! O profissional aceitou o pedido e encontra-se a $distancia de distância. Por favor, aguarde no local.',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+          const SizedBox(height: 32),
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              onPressed: () {
+                Navigator.pop(context); // Fecha o painel de sucesso
+                setState(() {
+                  _categoriaSelecionada = null; // Permite um novo pedido depois
+                  _idChamadoAtual = null;
+                });
+              },
+              child: const Text('OK, ESTOU À ESPERA', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _onAtualizacaoChamado(Map<String, dynamic> data) {
+    if (data['status_novo'] == 'a_caminho' && data['chamado_id'] == _idChamadoAtual) {
+      _cooldownTimer?.cancel();
+      SocketService().pararDeOuvir();
+      
+      if (!mounted) return;
+      
+      setState(() {
+        _isProcurando = false;
+      });
+
+      // Abre o feedback de sucesso!
+      showModalBottomSheet(
+        context: context,
+        isDismissible: false,
+        enableDrag: false,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+        ),
+        builder: (context) => _construirPainelSucesso(
+          nome: data['profissional_nome'] ?? 'O Profissional',
+          distancia: data['distancia_texto'] ?? 'caminho',
+        ),
+      );
+    }
   }
 }
