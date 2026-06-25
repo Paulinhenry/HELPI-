@@ -44,8 +44,7 @@ const errorHandler = (err, req, res, next) => {
 
     // --- Erro desconhecido (bug real) ---
     // Em produção, não expõe detalhes internos
-    logger.error('💥 ERRO NÃO TRATADO:', { 
-        message: err.message, 
+    logger.error(`[ERROR] ERRO_NAO_TRATADO: ${err.message}`, { 
         stack: err.stack,
         url: req.originalUrl,
         method: req.method

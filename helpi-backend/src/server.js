@@ -1,6 +1,7 @@
 const app = require('./app');
 const http = require('http');
 const { Server } = require('socket.io');
+const logger = require('./utils/logger');
 
 const PORT = process.env.PORT || 3000;
 
@@ -26,14 +27,14 @@ const pool = require('./config/database');
 const profissionaisConectados = new Map();
 
 io.on('connection', (socket) => {
-    console.log(`[Socket.io] 🟢 Novo dispositivo conectado: ${socket.id}`);
+    logger.info(`[SOCKET] CONEXÃO: novo dispositivo conectado (socket_id: ${socket.id})`);
 
     // Quando o app do cliente conecta, junta-se à sala do cliente para receber notificações
     socket.on('entrar_sala_cliente', (dados) => {
         const { cliente_id } = dados;
         if (cliente_id) {
             socket.join(`cliente:${cliente_id}`);
-            console.log(`[Socket.io] 📱 Cliente ${cliente_id} entrou na sala de notificações.`);
+            logger.info(`[SOCKET] SALA_CLIENTE: cliente ${cliente_id} entrou na sala de notificações`);
         }
     });
 
@@ -45,7 +46,7 @@ io.on('connection', (socket) => {
             // CORREÇÃO: Limpa socket antigo se o profissional reconectar com novo socket
             const socketAntigo = profissionaisConectados.get(profissional_id);
             if (socketAntigo && socketAntigo !== socket.id) {
-                console.log(`[Radar] Profissional ${profissional_id} reconectou (socket antigo: ${socketAntigo})`);
+                logger.info(`[RADAR] RECONEXÃO: profissional ${profissional_id} reconectou (socket_antigo: ${socketAntigo}, socket_novo: ${socket.id})`);
             }
 
             profissionaisConectados.set(profissional_id, socket.id);
@@ -64,7 +65,7 @@ io.on('connection', (socket) => {
                 await pool.query('UPDATE profissionais SET is_online = true WHERE id = $1', [profissional_id]);
             }
             
-            console.log(`[Radar] 👷 Profissional ID ${profissional_id} está ONLINE e pronto a receber pedidos.`);
+            logger.info(`[RADAR] ONLINE: profissional ${profissional_id} ficou online (lat: ${latitude}, lng: ${longitude})`);
 
             // --- NOVO: VERIFICAR CHAMADOS PENDENTES QUE ELE PERDEU ---
             if (latitude && longitude) {
@@ -96,7 +97,7 @@ io.on('connection', (socket) => {
                 const { rows: chamadosAtivos } = await pool.query(queryChamados, [longitude, latitude, profissional_id]);
                 
                 if (chamadosAtivos.length > 0) {
-                    console.log(`[Radar] Encontrado(s) ${chamadosAtivos.length} chamado(s) pendente(s) para o Profissional ${profissional_id}`);
+                    logger.info(`[RADAR] CHAMADOS_PENDENTES: ${chamadosAtivos.length} chamado(s) reenviado(s) para profissional ${profissional_id}`);
                     chamadosAtivos.forEach(chamado => {
                         socket.emit('novo_chamado_emergencia', {
                             chamado_id: chamado.id,
@@ -109,7 +110,7 @@ io.on('connection', (socket) => {
                 }
             }
         } catch (error) {
-            console.error(`Erro ao colocar profissional online:`, error);
+            logger.error(`[RADAR] ERRO_ONLINE: falha ao colocar profissional online`, { error: error.message, stack: error.stack });
         }
     });
 
@@ -123,10 +124,10 @@ io.on('connection', (socket) => {
                     // Proteção de segurança: marca como offline na base de dados automaticamente
                     await pool.query('UPDATE profissionais SET is_online = false WHERE id = $1', [id]);
                 } catch (error) {
-                    console.error(`Erro ao colocar profissional offline:`, error);
+                    logger.error(`[RADAR] ERRO_OFFLINE: falha ao marcar profissional ${id} como offline`, { error: error.message });
                 }
 
-                console.log(`[Radar] 🔴 Profissional ID ${id} ficou OFFLINE.`);
+                logger.info(`[RADAR] OFFLINE: profissional ${id} desconectou`);
                 break;
             }
         }
@@ -139,5 +140,5 @@ app.set('profissionaisConectados', profissionaisConectados);
 
 // 4. Arrancamos o servidor
 server.listen(PORT, () => {
-    console.log(`🚀 Servidor e WebSockets a correr na porta ${PORT}`);
+    logger.info(`[SERVER] INICIALIZADO: servidor HTTP + WebSocket a correr na porta ${PORT} (env: ${process.env.NODE_ENV || 'development'})`);
 });

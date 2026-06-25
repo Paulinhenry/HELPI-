@@ -69,7 +69,7 @@ const criarAvaliacao = async (req, res, next) => {
 
         await client.query('COMMIT');
 
-        logger.info(`Avaliação criada para chamado ${chamado_id}: nota ${nota} | Média do profissional ${profissional_id}: ${novaMedia}`);
+        logger.info(`[AVALIACAO] CRIADA: chamado ${chamado_id} | nota: ${nota}/5 | profissional: ${profissional_id} | nova_media: ${novaMedia}`);
 
         res.status(201).json({
             mensagem: "Avaliação registada com sucesso! Obrigado pelo feedback.",

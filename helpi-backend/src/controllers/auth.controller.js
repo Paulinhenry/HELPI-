@@ -23,7 +23,7 @@ const loginCliente = async (req, res, next) => {
         );
 
         if (resultado.rows.length === 0) {
-            logger.warn(`Tentativa de login com email inexistente: ${email}`);
+            logger.warn(`[AUTH] LOGIN_FALHA: email não encontrado (tipo: cliente, email: ${email})`);
             return res.status(401).json({
                 erro: 'Email ou senha inválidos'
             });
@@ -33,7 +33,7 @@ const loginCliente = async (req, res, next) => {
         const senhaValida = await bcrypt.compare(senha, cliente.senha);
 
         if (!senhaValida) {
-            logger.warn(`Senha incorreta para cliente: ${email}`);
+            logger.warn(`[AUTH] LOGIN_FALHA: senha incorreta (tipo: cliente, email: ${email})`);
             return res.status(401).json({
                 erro: 'Email ou senha inválidos'
             });
@@ -42,7 +42,7 @@ const loginCliente = async (req, res, next) => {
         // Gera o par access + refresh
         const tokens = gerarTokens(cliente.id, 'cliente');
 
-        logger.info(`Login de cliente bem-sucedido: ${cliente.id}`);
+        logger.info(`[AUTH] LOGIN_OK: cliente ${cliente.id} autenticado com sucesso`);
 
         res.json({
             mensagem: 'Login realizado com sucesso',
@@ -73,7 +73,7 @@ const loginProfissional = async (req, res, next) => {
         );
 
         if (resultado.rows.length === 0) {
-            logger.warn(`Tentativa de login profissional com email inexistente: ${email}`);
+            logger.warn(`[AUTH] LOGIN_FALHA: email não encontrado (tipo: profissional, email: ${email})`);
             return res.status(401).json({
                 erro: 'Email ou senha inválidos'
             });
@@ -83,7 +83,7 @@ const loginProfissional = async (req, res, next) => {
         const senhaValida = await bcrypt.compare(senha, profissional.senha);
 
         if (!senhaValida) {
-            logger.warn(`Senha incorreta para profissional: ${email}`);
+            logger.warn(`[AUTH] LOGIN_FALHA: senha incorreta (tipo: profissional, email: ${email})`);
             return res.status(401).json({
                 erro: 'Email ou senha inválidos'
             });
@@ -99,7 +99,7 @@ const loginProfissional = async (req, res, next) => {
 
         const tokens = gerarTokens(profissional.id, 'profissional');
 
-        logger.info(`Login de profissional bem-sucedido: ${profissional.id}`);
+        logger.info(`[AUTH] LOGIN_OK: profissional ${profissional.id} autenticado com sucesso`);
 
         res.json({
             mensagem: 'Login realizado com sucesso',
@@ -169,7 +169,7 @@ const refreshToken = async (req, res, next) => {
         // Gera novo access token (o refresh continua válido)
         const novoAccessToken = gerarAccessToken(decoded.id, decoded.tipo);
 
-        logger.info(`Token renovado para ${decoded.tipo}: ${decoded.id}`);
+        logger.info(`[AUTH] TOKEN_RENOVADO: ${decoded.tipo} ${decoded.id} recebeu novo access_token`);
 
         res.json({
             mensagem: 'Token renovado com sucesso',
