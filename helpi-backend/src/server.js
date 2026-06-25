@@ -80,11 +80,11 @@ io.on('connection', (socket) => {
                     CROSS JOIN (SELECT categoria FROM profissionais WHERE id = $3) p
                     WHERE c.status = 'procurando_profissional'
                       AND (
-                          (p.categoria = MAPA_CATEGORIAS['Elétrica'] AND LOWER(c.categoria_solicitada) = 'elétrica') OR
-                          (p.categoria = MAPA_CATEGORIAS['Hidráulica'] AND LOWER(c.categoria_solicitada) = 'hidráulica') OR
-                          (p.categoria = MAPA_CATEGORIAS['Chaveiro'] AND LOWER(c.categoria_solicitada) = 'chaveiro') OR
-                          (p.categoria = MAPA_CATEGORIAS['Limpeza'] AND LOWER(c.categoria_solicitada) = 'limpeza') OR
-                          (p.categoria = MAPA_CATEGORIAS['Montador'] AND LOWER(c.categoria_solicitada) = 'montador') OR
+                          (p.categoria = '${MAPA_CATEGORIAS['Elétrica']}' AND LOWER(c.categoria_solicitada) = 'elétrica') OR
+                          (p.categoria = '${MAPA_CATEGORIAS['Hidráulica']}' AND LOWER(c.categoria_solicitada) = 'hidráulica') OR
+                          (p.categoria = '${MAPA_CATEGORIAS['Chaveiro']}' AND LOWER(c.categoria_solicitada) = 'chaveiro') OR
+                          (p.categoria = '${MAPA_CATEGORIAS['Limpeza']}' AND LOWER(c.categoria_solicitada) = 'limpeza') OR
+                          (p.categoria = '${MAPA_CATEGORIAS['Montador']}' AND LOWER(c.categoria_solicitada) = 'montador') OR
                           (LOWER(c.categoria_solicitada) = LOWER(p.categoria))
                       )
                       AND ST_DWithin(
