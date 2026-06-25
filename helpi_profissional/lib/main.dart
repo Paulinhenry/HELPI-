@@ -7,6 +7,8 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 // Importa os teus ficheiros
 import 'core/providers/auth_provider.dart';
 import 'features/auth/screens/login_screen.dart';
+import 'features/chamados/screens/mapa_rota_screen.dart';
+import 'services/chamado_service.dart';
 import 'services/socket_service.dart'; // O ficheiro que te dei na resposta anterior
 
 void main() async {
@@ -96,10 +98,12 @@ class _RadarScreenState extends State<RadarScreen> {
 
     if (!mounted) return;
 
+    final chamadoId = dados['chamado_id']?.toString() ?? '';
+
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text(
           '🚨 NOVO SERVIÇO!',
           style: TextStyle(fontWeight: FontWeight.bold),
@@ -112,15 +116,84 @@ class _RadarScreenState extends State<RadarScreen> {
             onPressed: () {
               FlutterRingtonePlayer()
                   .stop(); // Para o som se ainda estiver a tocar
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
             },
             child: const Text('RECUSAR', style: TextStyle(color: Colors.red)),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               FlutterRingtonePlayer().stop();
-              Navigator.pop(context);
-              // TODO: Logica de aceitar o serviço (chamada API PUT /aceitar)
+
+              // Fecha o popup imediatamente (UX rápida)
+              Navigator.pop(dialogContext);
+
+              // Mostra feedback visual enquanto chama a API
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Row(
+                    children: [
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(width: 12),
+                      Text('A aceitar o chamado...'),
+                    ],
+                  ),
+                  backgroundColor: Color(0xFF1565C0),
+                  duration: Duration(seconds: 10),
+                ),
+              );
+
+              try {
+                // Chama o backend: PUT /chamados/:id/aceitar
+                final chamadoService = ChamadoService();
+                final chamado = await chamadoService.aceitarChamado(chamadoId);
+
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+                // Navega para a tela de mapa com as coordenadas do cliente
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => MapaRotaScreen(
+                      chamadoId: chamado['id'].toString(),
+                      latitudeDestino: (chamado['latitude_destino'] as num).toDouble(),
+                      longitudeDestino: (chamado['longitude_destino'] as num).toDouble(),
+                      categoria: chamado['categoria_solicitada'] ?? dados['categoria'] ?? '',
+                      descricao: chamado['problema_descricao'] ?? dados['descricao'] ?? '',
+                    ),
+                  ),
+                );
+              } on ChamadoJaAceitoException catch (e) {
+                // Outro profissional foi mais rápido (race condition)
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('😞 $e'),
+                    backgroundColor: Colors.orange[800],
+                    duration: const Duration(seconds: 4),
+                  ),
+                );
+              } catch (e) {
+                // Erro genérico
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Erro: $e'),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 4),
+                  ),
+                );
+              }
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             child: const Text(
