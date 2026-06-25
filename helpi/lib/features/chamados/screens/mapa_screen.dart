@@ -77,14 +77,24 @@ class _MapaScreenViewState extends State<MapaScreenView> {
           SnackBar(content: Text(erro), backgroundColor: AppColors.error),
         );
       };
+
+      // Listen to provider changes to adjust camera dynamically when tracking
+      chamadosProvider.addListener(_onProviderUpdate);
     });
+  }
+
+  void _onProviderUpdate() {
+    if (!mounted) return;
+    final chamadosProvider = context.read<ChamadosProvider>();
+    if (chamadosProvider.isProfissionalACaminho && chamadosProvider.posicaoProfissional != null) {
+      _ajustarCameraParaAmbos(chamadosProvider);
+    }
   }
 
   @override
   void dispose() {
     mapController?.dispose();
     _descricaoController.dispose();
-    // Arch Fix: Desconectar socket
     SocketService().desconectar();
     super.dispose();
   }
@@ -93,14 +103,51 @@ class _MapaScreenViewState extends State<MapaScreenView> {
     mapController = controller;
   }
 
-  // Transforma segundos brutos no formato MM:SS
+  void _ajustarCameraParaAmbos(ChamadosProvider provider) {
+    if (mapController == null || provider.posicaoAtual == null || provider.posicaoProfissional == null) return;
+    
+    LatLngBounds bounds;
+    final p1 = LatLng(provider.posicaoAtual!.latitude, provider.posicaoAtual!.longitude);
+    final p2 = LatLng(provider.posicaoProfissional!.latitude, provider.posicaoProfissional!.longitude);
+    
+    if (p1.latitude > p2.latitude && p1.longitude > p2.longitude) {
+      bounds = LatLngBounds(southwest: p2, northeast: p1);
+    } else if (p1.longitude > p2.longitude) {
+      bounds = LatLngBounds(southwest: LatLng(p1.latitude, p2.longitude), northeast: LatLng(p2.latitude, p1.longitude));
+    } else if (p1.latitude > p2.latitude) {
+      bounds = LatLngBounds(southwest: LatLng(p2.latitude, p1.longitude), northeast: LatLng(p1.latitude, p2.longitude));
+    } else {
+      bounds = LatLngBounds(southwest: p1, northeast: p2);
+    }
+    
+    mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 80.0)); // 80.0 de padding
+  }
+
+  Set<Marker> _getMarkers(ChamadosProvider provider) {
+    Set<Marker> markers = {};
+    if (provider.posicaoAtual != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('cliente'),
+        position: LatLng(provider.posicaoAtual!.latitude, provider.posicaoAtual!.longitude),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+      ));
+    }
+    if (provider.isProfissionalACaminho && provider.posicaoProfissional != null) {
+      markers.add(Marker(
+        markerId: const MarkerId('profissional'),
+        position: LatLng(provider.posicaoProfissional!.latitude, provider.posicaoProfissional!.longitude),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+      ));
+    }
+    return markers;
+  }
+
   String _formatarTempo(int segundos) {
     final minutos = segundos ~/ 60;
     final restante = segundos % 60;
     return '${minutos.toString().padLeft(2, '0')}:${restante.toString().padLeft(2, '0')}';
   }
 
-  // Helper para obter IconData pelo nome da string da DB
   IconData _getIconData(String iconName) {
     switch(iconName) {
       case 'electrical_services': return Icons.electrical_services;
@@ -112,7 +159,6 @@ class _MapaScreenViewState extends State<MapaScreenView> {
     }
   }
 
-  // Helper para obter a Cor pela string da DB
   Color _getColor(String colorName) {
     switch(colorName) {
       case 'orange': return Colors.orange;
@@ -150,7 +196,6 @@ class _MapaScreenViewState extends State<MapaScreenView> {
             margin: const EdgeInsets.only(right: 16),
             decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
             child: IconButton(
-              // UX Fix: Ícone de logout
               icon: const Icon(Icons.logout, color: AppColors.primaryColor),
               onPressed: () => context.read<AuthProvider>().logout(),
             ),
@@ -169,19 +214,103 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                         target: LatLng(provider.posicaoAtual!.latitude, provider.posicaoAtual!.longitude),
                         zoom: 16.5,
                       ),
-                      myLocationEnabled: true,
+                      markers: _getMarkers(provider),
+                      myLocationEnabled: !provider.isProfissionalACaminho, // Esconde o ponto azul do Google se estiver em tracking
                       myLocationButtonEnabled: false,
                       zoomControlsEnabled: false,
                       mapToolbarEnabled: false,
                     ),
                     Align(
                       alignment: Alignment.bottomCenter,
-                      child: provider.isProcurando 
-                        ? _construirPainelBuscando(provider) 
-                        : _construirPainelSolicitacao(provider),
+                      child: provider.isProfissionalACaminho
+                        ? _construirPainelRastreamento(provider)
+                        : provider.isProcurando 
+                          ? _construirPainelBuscando(provider) 
+                          : _construirPainelSolicitacao(provider),
                     ),
                   ],
                 ),
+    );
+  }
+
+  Widget _construirPainelRastreamento(ChamadosProvider provider) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 20, offset: const Offset(0, -5))],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 50,
+                  height: 5,
+                  decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.primaryColor, width: 2),
+                    ),
+                    child: const Icon(Icons.person, color: AppColors.primaryColor, size: 35),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          provider.nomeProfissional,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.location_on, color: AppColors.primaryColor, size: 16),
+                            const SizedBox(width: 4),
+                            Text(
+                              provider.distanciaProfissional,
+                              style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.phone, color: AppColors.primaryColor),
+                  label: const Text('Contactar Profissional', style: TextStyle(color: AppColors.primaryColor, fontSize: 16, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.primaryColor, width: 2),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: () {
+                    // Simular chamada telefónica
+                  },
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -233,7 +362,6 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                // UX Fix: Campo para descrição personalizada
                 TextField(
                   controller: _descricaoController,
                   decoration: InputDecoration(
@@ -460,8 +588,8 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               onPressed: () {
-                Navigator.pop(context);
-                provider.resetarEstado();
+                Navigator.pop(context); // Remove a modal
+                _ajustarCameraParaAmbos(provider); // Ajusta a câmera para o rastreamento
               },
               child: const Text('OK, ESTOU À ESPERA', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
             ),

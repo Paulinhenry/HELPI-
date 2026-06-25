@@ -58,6 +58,20 @@ class SocketService {
     _socket?.off('atualizacao_chamado');
   }
 
+  /// Escuta a localização em tempo real do profissional
+  void ouvirLocalizacaoProfissional(Function(Map<String, dynamic>) onLocalizacao) {
+    if (_socket == null) return;
+    _socket!.off('localizacao_profissional');
+    _socket!.on('localizacao_profissional', (data) {
+      final Map<String, dynamic> mapa = Map<String, dynamic>.from(data);
+      onLocalizacao(mapa);
+    });
+  }
+
+  void pararDeOuvirLocalizacao() {
+    _socket?.off('localizacao_profissional');
+  }
+
   void desconectar() {
     if (_socket != null) {
       _socket!.disconnect();
