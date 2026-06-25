@@ -177,15 +177,42 @@ const aceitarChamado = async (req, res, next) => {
             [profissional_id, id]
         );
 
+        // Calcula distância usando PostGIS e busca o nome do eletricista
+        const infoProf = await client.query(
+            `SELECT p.nome,
+                    ST_Distance(
+                        p.coordenadas,
+                        ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+                    ) AS distancia_metros
+             FROM profissionais p
+             WHERE p.id = $3`,
+            [atualizacao.rows[0].longitude_destino, atualizacao.rows[0].latitude_destino, profissional_id]
+        );
+
+        let profissional_nome = "O Profissional";
+        let distancia_texto = "calculando distância...";
+
+        if (infoProf.rows.length > 0) {
+            profissional_nome = infoProf.rows[0].nome;
+            if (infoProf.rows[0].distancia_metros != null) {
+                const distancia_metros = Math.round(infoProf.rows[0].distancia_metros);
+                distancia_texto = distancia_metros > 1000 
+                    ? `${(distancia_metros / 1000).toFixed(1)} km` 
+                    : `${distancia_metros} metros`;
+            }
+        }
+
         await client.query('COMMIT');
 
-        // WebSocket: notifica apenas o cliente dono do chamado
+        // WebSocket: notifica apenas o cliente dono do chamado (O Suspiro de Alívio)
         const io = req.app.get('io');
         if (io) {
             io.to(`cliente:${atualizacao.rows[0].cliente_id}`).emit('atualizacao_chamado', {
                 chamado_id: id,
                 status_novo: 'a_caminho',
-                mensagem: "Um profissional aceitou o seu chamado e está a caminho!"
+                profissional_nome: profissional_nome,
+                distancia_texto: distancia_texto,
+                mensagem: `${profissional_nome} aceitou e está a ${distancia_texto}!`
             });
         }
 
