@@ -21,7 +21,7 @@ const criarCliente = async (req, res, next) => {
             [nome, cpf, email.toLowerCase().trim(), senhaHash, telefone]
         );
 
-        logger.info(`Novo cliente registado: ${novoCliente.rows[0].id}`);
+        logger.info(`[CLIENTE] REGISTADO: cliente ${novoCliente.rows[0].id} | email: ${email.toLowerCase().trim()}`);
 
         res.status(201).json({
             mensagem: 'Cliente registado com sucesso!',

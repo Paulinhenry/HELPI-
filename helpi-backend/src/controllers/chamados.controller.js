@@ -81,7 +81,7 @@ const criarChamado = async (req, res, next) => {
 
         // 2. SE NÃO HOUVER NINGUÉM NUM RAIO DE 10KM, AVISAMOS O SISTEMA
         if (busca.rows.length === 0) {
-            logger.info(`Chamado criado em espera: ${novoChamado.rows[0].id} (Sem prof. próximos)`);
+            logger.info(`[CHAMADO] CRIADO_EM_ESPERA: chamado ${novoChamado.rows[0].id} criado sem profissionais no raio de 10km (cliente: ${cliente_id})`);
             return res.status(201).json({
                 mensagem: "Chamado criado com sucesso (em espera). Não há profissionais num raio de 10km no momento.",
                 chamado: novoChamado.rows[0],
@@ -118,7 +118,7 @@ const criarChamado = async (req, res, next) => {
             });
         }
 
-        logger.info(`Chamado criado: ${novoChamado.rows[0].id} por cliente ${cliente_id}`);
+        logger.info(`[CHAMADO] CRIADO: chamado ${novoChamado.rows[0].id} por cliente ${cliente_id} | categoria: ${categoria_solicitada} | profissionais_no_raio: ${busca.rows.length} | notificados: ${profissionaisNotificados}`);
 
         return res.status(201).json({
             mensagem: "Emergência disparada! Profissionais notificados.",
@@ -189,7 +189,7 @@ const aceitarChamado = async (req, res, next) => {
             });
         }
 
-        logger.info(`Chamado ${id} aceito pelo profissional ${profissional_id}`);
+        logger.info(`[CHAMADO] ACEITE: chamado ${id} aceite pelo profissional ${profissional_id} | status: a_caminho | cliente: ${atualizacao.rows[0].cliente_id}`);
 
         res.json({
             mensagem: "Chamado aceito com sucesso!",
@@ -252,7 +252,7 @@ const registrarChegada = async (req, res, next) => {
             });
         }
 
-        logger.info(`Profissional ${profissional_id} chegou ao local do chamado ${id}`);
+        logger.info(`[CHAMADO] CHEGADA: profissional ${profissional_id} chegou ao local do chamado ${id} | status: em_servico`);
 
         res.json({
             mensagem: "Chegada registrada com sucesso! O cliente foi notificado.",
@@ -315,7 +315,7 @@ const finalizarChamado = async (req, res, next) => {
             });
         }
 
-        logger.info(`Chamado ${id} finalizado pelo profissional ${profissional_id}`);
+        logger.info(`[CHAMADO] FINALIZADO: chamado ${id} finalizado pelo profissional ${profissional_id} | status: finalizado`);
 
         res.json({
             mensagem: "Serviço finalizado com sucesso! Bom trabalho.",
@@ -391,12 +391,14 @@ const cancelarChamado = async (req, res) => {
             });
         }
 
+        logger.info(`[CHAMADO] CANCELADO: chamado ${id} cancelado pelo cliente ${cliente_id} | status: cancelado_pelo_cliente`);
+
         return res.status(200).json({ 
             mensagem: 'Chamado cancelado com sucesso.', 
             chamado: result.rows[0] 
         });
     } catch (error) {
-        logger.error('Erro ao cancelar chamado:', error);
+        logger.error(`[CHAMADO] ERRO_CANCELAMENTO: falha ao cancelar chamado ${id}`, { error: error.message, cliente_id });
         return res.status(500).json({ erro: 'Erro interno ao cancelar o pedido.' });
     }
 };

@@ -110,7 +110,7 @@ const registarProfissional = async (req, res, next) => {
             [nome, cpf_cnpj, email.toLowerCase().trim(), senhaHash, telefone, categoria, biografia]
         );
 
-        logger.info(`Novo profissional registado: ${novoProfissional.rows[0].id} (${categoria})`);
+        logger.info(`[PROFISSIONAL] REGISTADO: profissional ${novoProfissional.rows[0].id} | categoria: ${categoria} | status: aguardando_aprovacao`);
 
         res.status(201).json({
             mensagem: "Profissional registado com sucesso! Aguardando aprovação.",
@@ -155,7 +155,7 @@ const atualizarPerfil = async (req, res, next) => {
             return res.status(404).json({ erro: 'Profissional não encontrado.' });
         }
 
-        logger.info(`Perfil atualizado: profissional ${profissional_id}`);
+        logger.info(`[PROFISSIONAL] PERFIL_ATUALIZADO: profissional ${profissional_id} | campos: ${campos.filter(c => !c.startsWith('atualizado_em')).join(', ')}`);
         res.json({
             mensagem: 'Perfil atualizado com sucesso!',
             profissional: resultado.rows[0]
