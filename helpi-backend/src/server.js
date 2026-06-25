@@ -113,6 +113,22 @@ io.on('connection', (socket) => {
         }
     });
 
+    // --- NOVO: RECEBER LOCALIZAÇÃO DO PROFISSIONAL EM TEMPO REAL ---
+    socket.on('atualizar_localizacao', (dados) => {
+        const { profissional_id, latitude, longitude, cliente_id } = dados;
+        
+        if (latitude && longitude && cliente_id) {
+            // Emite a localização do profissional apenas para o cliente do chamado ativo
+            io.to(`cliente:${cliente_id}`).emit('localizacao_profissional', {
+                profissional_id,
+                latitude,
+                longitude,
+                timestamp: new Date().toISOString()
+            });
+            logger.info(`[RADAR] LOCALIZACAO_LIVE: profissional ${profissional_id} enviou coords lat: ${latitude}, lng: ${longitude} p/ cliente ${cliente_id}`);
+        }
+    });
+
     // Quando o trabalhador fechar a app, ficar sem internet ou clicar "Ficar Offline"
     socket.on('disconnect', async () => {
         for (let [id, socketId] of profissionaisConectados.entries()) {

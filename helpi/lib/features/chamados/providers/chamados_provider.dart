@@ -22,6 +22,12 @@ class ChamadosProvider with ChangeNotifier {
   String? _idChamadoAtual;
   String _descricaoProblema = "Emergência urgente solicitada via Helpi App";
 
+  // Tracking do Profissional
+  bool _isProfissionalACaminho = false;
+  Position? _posicaoProfissional;
+  String _nomeProfissional = "";
+  String _distanciaProfissional = "";
+
   Timer? _cooldownTimer;
   int _segundosRestantes = 90;
 
@@ -39,6 +45,11 @@ class ChamadosProvider with ChangeNotifier {
   String? get idChamadoAtual => _idChamadoAtual;
   int get segundosRestantes => _segundosRestantes;
   String get descricaoProblema => _descricaoProblema;
+  
+  bool get isProfissionalACaminho => _isProfissionalACaminho;
+  Position? get posicaoProfissional => _posicaoProfissional;
+  String get nomeProfissional => _nomeProfissional;
+  String get distanciaProfissional => _distanciaProfissional;
 
   void setCategoria(String? categoria) {
     _categoriaSelecionada = categoria;
@@ -154,6 +165,7 @@ class ChamadosProvider with ChangeNotifier {
   void _finalizarBuscaPorTimeout() {
     _cooldownTimer?.cancel();
     SocketService().pararDeOuvir();
+    SocketService().pararDeOuvirLocalizacao();
 
     if (_idChamadoAtual != null) {
       _chamadosService.cancelarChamado(_idChamadoAtual!).catchError((e) {
@@ -162,6 +174,7 @@ class ChamadosProvider with ChangeNotifier {
     }
 
     _isProcurando = false;
+    _isProfissionalACaminho = false;
     _idChamadoAtual = null;
     notifyListeners();
     
@@ -171,6 +184,7 @@ class ChamadosProvider with ChangeNotifier {
   Future<void> cancelarBuscaManualmente() async {
     _cooldownTimer?.cancel();
     SocketService().pararDeOuvir();
+    SocketService().pararDeOuvirLocalizacao();
 
     if (_idChamadoAtual != null) {
       try {
@@ -181,6 +195,7 @@ class ChamadosProvider with ChangeNotifier {
     }
 
     _isProcurando = false;
+    _isProfissionalACaminho = false;
     _categoriaSelecionada = null;
     _idChamadoAtual = null;
     notifyListeners();
@@ -189,12 +204,34 @@ class ChamadosProvider with ChangeNotifier {
   void _onAtualizacaoChamado(Map<String, dynamic> data) {
     if (data['status_novo'] == 'a_caminho' && data['chamado_id'] == _idChamadoAtual) {
       _cooldownTimer?.cancel();
-      SocketService().pararDeOuvir();
+      // Mantemos o socket do chamado para ouvir quando for 'em_servico' ou 'finalizado'
       
       _isProcurando = false;
+      _isProfissionalACaminho = true;
+      _nomeProfissional = data['profissional_nome'] ?? 'O Profissional';
+      _distanciaProfissional = data['distancia_texto'] ?? 'A caminho';
+      
+      // Inicia a escuta da localização em tempo real
+      SocketService().ouvirLocalizacaoProfissional(_onLocalizacaoProfissional);
+      
       notifyListeners();
       
       onSuccess?.call(data);
+    } else if ((data['status_novo'] == 'cancelado' || data['status_novo'] == 'finalizado') && data['chamado_id'] == _idChamadoAtual) {
+      // Se finalizar ou for cancelado, resetamos tudo
+      resetarEstado();
+    }
+  }
+
+  void _onLocalizacaoProfissional(Map<String, dynamic> data) {
+    if (data['latitude'] != null && data['longitude'] != null) {
+      _posicaoProfissional = Position(
+        latitude: data['latitude'],
+        longitude: data['longitude'],
+        timestamp: DateTime.now(),
+        accuracy: 0.0, altitude: 0.0, altitudeAccuracy: 0.0, heading: 0.0, headingAccuracy: 0.0, speed: 0.0, speedAccuracy: 0.0,
+      );
+      notifyListeners();
     }
   }
 
@@ -202,6 +239,9 @@ class ChamadosProvider with ChangeNotifier {
     _categoriaSelecionada = null;
     _idChamadoAtual = null;
     _isProcurando = false;
+    _isProfissionalACaminho = false;
+    _posicaoProfissional = null;
+    SocketService().pararDeOuvirLocalizacao();
     notifyListeners();
   }
 
