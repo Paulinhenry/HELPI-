@@ -241,7 +241,7 @@ class _RadarScreenState extends State<RadarScreen> {
               boxShadow: [
                 BoxShadow(
                   color: (_isOnline ? Colors.blue : Colors.grey[800]!)
-                      .withOpacity(0.5),
+                      .withValues(alpha: 0.5),
                   blurRadius: 20,
                   spreadRadius: 5,
                 ),

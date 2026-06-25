@@ -1,5 +1,6 @@
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter/foundation.dart';
 import '../core/config/env.dart';
 import '../core/services/location_service.dart';
 
@@ -25,7 +26,7 @@ class SocketService {
     _socket!.connect();
 
     _socket!.onConnect((_) async {
-      print('[Radar] Conectado ao servidor! ID: ${_socket!.id}');
+      debugPrint('[Radar] Conectado ao servidor! ID: ${_socket!.id}');
       
       double? lat;
       double? lng;
@@ -37,7 +38,7 @@ class SocketService {
         lat = position.latitude;
         lng = position.longitude;
       } catch (e) {
-        print("Aviso: GPS não disponível: $e");
+        debugPrint("Aviso: GPS não disponível: $e");
         // Em ambiente de testes, podemos passar um dummy de SP
         lat = -23.550520;
         lng = -46.633308;
@@ -46,21 +47,21 @@ class SocketService {
       // Emite o evento real com o GPS e ID do profissional para o Node.js
       _socket!.emit('ficar_online', {
         'profissional_id': profissionalId,
-        'latitude': lat ?? -23.550520,
-        'longitude': lng ?? -46.633308,
+        'latitude': lat,
+        'longitude': lng,
       });
     });
 
     // Ouve a sirene vinda do Node.js
     _socket!.on('novo_chamado_emergencia', (data) {
-      print('[Radar] 🚨 NOVO CHAMADO RECEBIDO: $data');
+      debugPrint('[Radar] 🚨 NOVO CHAMADO RECEBIDO: $data');
       // Converte o objeto dinâmico do socket num mapa do Dart
       final Map<String, dynamic> mapaAviso = Map<String, dynamic>.from(data);
       onAlertaTrabalho(mapaAviso);
     });
 
     _socket!.onDisconnect((_) {
-      print('[Radar] Desconectado do servidor');
+      debugPrint('[Radar] Desconectado do servidor');
     });
   }
 
@@ -68,7 +69,7 @@ class SocketService {
     if (_socket != null) {
       _socket!.disconnect();
       _socket = null;
-      print('[Radar] Radar desligado manualmente.');
+      debugPrint('[Radar] Radar desligado manualmente.');
     }
   }
 }

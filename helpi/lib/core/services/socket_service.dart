@@ -1,4 +1,5 @@
 import 'package:socket_io_client/socket_io_client.dart' as io;
+import 'package:flutter/foundation.dart';
 import '../config/env.dart';
 
 class SocketService {
@@ -28,13 +29,13 @@ class SocketService {
     _socket!.connect();
 
     _socket!.onConnect((_) {
-      print('[Socket Cliente] Conectado ao servidor: ${_socket!.id}');
+      debugPrint('[Socket Cliente] Conectado ao servidor: ${_socket!.id}');
       // Junta-se à sala do cliente para receber notificações direcionadas
       _socket!.emit('entrar_sala_cliente', {'cliente_id': clienteId});
     });
 
     _socket!.onDisconnect((_) {
-      print('[Socket Cliente] Desconectado do servidor');
+      debugPrint('[Socket Cliente] Desconectado do servidor');
     });
   }
 
@@ -46,7 +47,7 @@ class SocketService {
     _socket!.off('atualizacao_chamado');
 
     _socket!.on('atualizacao_chamado', (data) {
-      print('[Socket Cliente] 📩 Atualização recebida: $data');
+      debugPrint('[Socket Cliente] 📩 Atualização recebida: $data');
       final Map<String, dynamic> mapa = Map<String, dynamic>.from(data);
       onAtualizacao(mapa);
     });
