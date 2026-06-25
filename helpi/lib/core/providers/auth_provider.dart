@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
+import '../services/socket_service.dart';
+import '../config/env.dart';
 
 class AuthProvider with ChangeNotifier {
   bool _isLoggedIn = false;
@@ -30,9 +33,41 @@ class AuthProvider with ChangeNotifier {
     final token = prefs.getString('access_token');
 
     if (token != null && token.isNotEmpty) {
-      _isLoggedIn = true;
       final decoded = _decodeJwt(token);
-      _userId = decoded?['id']?.toString();
+      final exp = decoded?['exp'];
+      
+      if (exp != null && DateTime.fromMillisecondsSinceEpoch(exp * 1000).isAfter(DateTime.now())) {
+        _isLoggedIn = true;
+        _userId = decoded?['id']?.toString();
+      } else {
+        // Token expirado - tentar refresh
+        final refreshToken = prefs.getString('refresh_token');
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          try {
+            final refreshDio = Dio(BaseOptions(baseUrl: Env.baseUrl));
+            final refreshResponse = await refreshDio.post('/auth/refresh', data: {
+              'refresh_token': refreshToken,
+            });
+
+            if (refreshResponse.statusCode == 200) {
+              final novoToken = refreshResponse.data['access_token'];
+              await prefs.setString('access_token', novoToken);
+              _isLoggedIn = true;
+              final newDecoded = _decodeJwt(novoToken);
+              _userId = newDecoded?['id']?.toString();
+            } else {
+              _isLoggedIn = false;
+              _userId = null;
+            }
+          } catch (e) {
+            _isLoggedIn = false;
+            _userId = null;
+          }
+        } else {
+          _isLoggedIn = false;
+          _userId = null;
+        }
+      }
     } else {
       _isLoggedIn = false;
       _userId = null;
@@ -61,6 +96,10 @@ class AuthProvider with ChangeNotifier {
     await prefs.remove('refresh_token'); 
     _isLoggedIn = false;
     _userId = null;
+    
+    // Disconnect socket properly
+    SocketService().desconectar();
+    
     notifyListeners();
   }
 }

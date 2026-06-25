@@ -11,6 +11,8 @@
 
 const pool = require('../config/database');
 const logger = require('../utils/logger');
+const { AppError } = require('../middlewares/errorHandler');
+const { TAXA_DESLOCAMENTO, MAPA_CATEGORIAS } = require('../utils/constants');
 
 // ─── CRIAR CHAMADO ──────────────────────────────────────────
 const criarChamado = async (req, res, next) => {
@@ -27,17 +29,19 @@ const criarChamado = async (req, res, next) => {
             longitude_destino
         } = req.body;
 
-        // Mapeamento de categorias Cliente -> Profissional
-        const mapaCategorias = {
-            'Elétrica': 'Eletricista',
-            'Hidráulica': 'Encanador',
-            'Chaveiro': 'Chaveiro',
-            'Limpeza': 'Limpeza',
-            'Montador': 'Montador'
-        };
+        // VALIDAÇÃO: Verifica inputs obrigatórios e válidos
+        if (!categoria_solicitada || !problema_descricao || latitude_destino === undefined || longitude_destino === undefined) {
+            await client.query('ROLLBACK');
+            throw new AppError('Todos os campos são obrigatórios (categoria, descrição, latitude e longitude).', 400);
+        }
+        if (typeof latitude_destino !== 'number' || typeof longitude_destino !== 'number') {
+            await client.query('ROLLBACK');
+            throw new AppError('Latitude e longitude devem ser números válidos.', 400);
+        }
+
         // Tenta usar o mapeamento, ignora case
         const catSoli = categoria_solicitada;
-        const categoriaMapeada = mapaCategorias[catSoli] || catSoli;
+        const categoriaMapeada = MAPA_CATEGORIAS[catSoli] || catSoli;
 
         // ── POSTIGS: Busca espacial com índice GiST (O(log n)) ──
         // ST_DWithin usa o índice GIST automaticamente (vs Haversine que faz full table scan)
@@ -109,7 +113,7 @@ const criarChamado = async (req, res, next) => {
                         categoria: categoria_solicitada,
                         descricao: problema_descricao,
                         distancia_metros: Math.round(profissional.distancia_km * 1000), // convertendo km pra metros caso necessário, ou só profissional.distancia_metros se existisse na query. A query retorna distancia_km.
-                        valor_sugerido: 40.00 // A taxa de deslocamento que planeámos
+                        valor_sugerido: TAXA_DESLOCAMENTO // A taxa de deslocamento que planeámos
                         // 🔒 Segurança: Não enviamos a morada exata nem as coordenadas 
                         // do cliente até o profissional aceitar o serviço!
                     });

@@ -53,10 +53,17 @@ class ApiClient {
                 e.requestOptions.headers['Authorization'] = 'Bearer $novoToken';
                 final retryResponse = await dio.fetch(e.requestOptions);
                 return handler.resolve(retryResponse);
+              } else {
+                // Falhou o refresh, limpa os tokens para forçar relogin na próxima vez
+                await prefs.remove('access_token');
+                await prefs.remove('refresh_token');
               }
             }
           } catch (_) {
-            // Se o refresh também falhar, propaga o erro original
+            // Se o refresh também falhar, propaga o erro original e limpa
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.remove('access_token');
+            await prefs.remove('refresh_token');
           }
         }
         return handler.next(e);

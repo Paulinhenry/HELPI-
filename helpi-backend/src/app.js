@@ -28,6 +28,7 @@ const rotasProfissionais = require('./routes/profissionais.routes');
 const rotasChamados = require('./routes/chamados.routes');
 const rotasAvaliacoes = require('./routes/avaliacoes.routes');
 const rotasAuth = require('./routes/auth.routes');
+const rotasCategorias = require('./routes/categorias.routes');
 
 const app = express();
 
@@ -105,6 +106,7 @@ app.use('/api/v1/clientes', rotasClientes);
 app.use('/api/v1/profissionais', rotasProfissionais);
 app.use('/api/v1/chamados', rotasChamados);
 app.use('/api/v1/avaliacoes', rotasAvaliacoes);
+app.use('/api/v1/categorias', rotasCategorias);
 
 // Retrocompatibilidade — rotas antigas continuam funcionando
 app.use('/api', rotasAuth);
@@ -112,6 +114,7 @@ app.use('/api/clientes', rotasClientes);
 app.use('/api/profissionais', rotasProfissionais);
 app.use('/api/chamados', rotasChamados);
 app.use('/api/avaliacoes', rotasAvaliacoes);
+app.use('/api/categorias', rotasCategorias);
 
 // =============================================================
 // Health Check Profundo — Verifica API + Banco de Dados
