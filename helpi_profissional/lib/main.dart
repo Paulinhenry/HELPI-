@@ -52,8 +52,8 @@ class HelpiProfissionalApp extends StatelessWidget {
               });
               return MapaRotaScreen(
                 chamadoId: c['id'].toString(),
-                latitudeDestino: (c['latitude_destino'] as num).toDouble(),
-                longitudeDestino: (c['longitude_destino'] as num).toDouble(),
+                latitudeDestino: double.parse(c['latitude_destino'].toString()),
+                longitudeDestino: double.parse(c['longitude_destino'].toString()),
                 categoria: c['categoria_solicitada'] ?? '',
                 descricao: c['problema_descricao'] ?? '',
                 clienteId: c['cliente_id']?.toString(),
@@ -182,8 +182,8 @@ class _RadarScreenState extends State<RadarScreen> {
                   MaterialPageRoute(
                     builder: (_) => MapaRotaScreen(
                       chamadoId: chamado['id'].toString(),
-                      latitudeDestino: (chamado['latitude_destino'] as num).toDouble(),
-                      longitudeDestino: (chamado['longitude_destino'] as num).toDouble(),
+                      latitudeDestino: double.parse(chamado['latitude_destino'].toString()),
+                      longitudeDestino: double.parse(chamado['longitude_destino'].toString()),
                       categoria: chamado['categoria_solicitada'] ?? dados['categoria'] ?? '',
                       descricao: chamado['problema_descricao'] ?? dados['descricao'] ?? '',
                       clienteId: chamado['cliente_id']?.toString(),
