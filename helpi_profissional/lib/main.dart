@@ -78,40 +78,57 @@ class RadarScreen extends StatefulWidget {
   State<RadarScreen> createState() => _RadarScreenState();
 }
 
-class _RadarScreenState extends State<RadarScreen> {
+class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStateMixin {
   final SocketService _socketService = SocketService();
   bool _isOnline = false;
+  late AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
 
   void _toggleModoTrabalho() {
-    setState(() => _isOnline = !_isOnline);
+    setState(() {
+      _isOnline = !_isOnline;
+      if (_isOnline) {
+        _pulseController.repeat(reverse: true);
+      } else {
+        _pulseController.stop();
+        _pulseController.reset();
+      }
+    });
 
     if (_isOnline) {
-      // Impede o ecrã de desligar enquanto estiver à espera de pedidos
       WakelockPlus.enable();
-
-      // LIGA O RADAR COM O ID REAL DA TUA BASE DE DADOS POSTGRESQL!
       _socketService.ligarRadar(
         widget.profissionalId,
         _mostrarAlertaDeTrabalho,
       );
     } else {
-      // Permite que o ecrã volte a desligar normalmente
       WakelockPlus.disable();
-
       _socketService.desligarRadar();
     }
   }
 
   void _mostrarAlertaDeTrabalho(Map<String, dynamic> dados) async {
-    // 🔊 Toca o alarme do telemóvel (ignora o modo silencioso e toca alto)
     FlutterRingtonePlayer().playAlarm();
 
-    // 📳 Faz o telemóvel vibrar
     bool? hasVibrator = await Vibration.hasVibrator();
     if (hasVibrator == true) {
       Vibration.vibrate(
         pattern: [500, 1000, 500, 1000],
-      ); // Vibra, Pausa, Vibra, Pausa
+      );
     }
 
     if (!mounted) return;
@@ -122,30 +139,29 @@ class _RadarScreenState extends State<RadarScreen> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF161A22),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text(
           '🚨 NOVO SERVIÇO!',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         content: Text(
           'Categoria: ${dados['categoria']}\nProblema: ${dados['descricao']}\nDistância: ${dados['distancia_metros']}m',
+          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () {
-              FlutterRingtonePlayer()
-                  .stop(); // Para o som se ainda estiver a tocar
+              FlutterRingtonePlayer().stop();
               Navigator.pop(dialogContext);
             },
-            child: const Text('RECUSAR', style: TextStyle(color: Colors.red)),
+            child: const Text('RECUSAR', style: TextStyle(color: Colors.redAccent)),
           ),
           ElevatedButton(
             onPressed: () async {
               FlutterRingtonePlayer().stop();
-
-              // Fecha o popup imediatamente (UX rápida)
               Navigator.pop(dialogContext);
 
-              // Mostra feedback visual enquanto chama a API
               if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -163,20 +179,18 @@ class _RadarScreenState extends State<RadarScreen> {
                       Text('A aceitar o chamado...'),
                     ],
                   ),
-                  backgroundColor: Color(0xFF1565C0),
+                  backgroundColor: Color(0xFF1B55D6),
                   duration: Duration(seconds: 10),
                 ),
               );
 
               try {
-                // Chama o backend: PUT /chamados/:id/aceitar
                 final chamadoService = ChamadoService();
                 final chamado = await chamadoService.aceitarChamado(chamadoId);
 
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-                // Navega para a tela de mapa com as coordenadas do cliente
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -191,37 +205,24 @@ class _RadarScreenState extends State<RadarScreen> {
                   ),
                 );
               } on ChamadoJaAceitoException catch (e) {
-                // Outro profissional foi mais rápido (race condition)
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('😞 $e'),
-                    backgroundColor: Colors.orange[800],
-                    duration: const Duration(seconds: 4),
-                  ),
+                  SnackBar(content: Text('😞 $e'), backgroundColor: Colors.orange[800], duration: const Duration(seconds: 4)),
                 );
               } catch (e) {
-                // Erro genérico
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Erro: $e'),
-                    backgroundColor: Colors.red,
-                    duration: const Duration(seconds: 4),
-                  ),
+                  SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.redAccent, duration: const Duration(seconds: 4)),
                 );
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text(
-              'ACEITAR',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.greenAccent[700],
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
+            child: const Text('ACEITAR', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -231,53 +232,264 @@ class _RadarScreenState extends State<RadarScreen> {
   @override
   Widget build(BuildContext context) {
     final nome = context.read<AuthProvider>().nome ?? 'Profissional';
-
+    const Color darkBg = Color(0xFF0B0E14);
+    const Color darkCard = Color(0xFF161A22);
+    const Color mockupBlue = Color(0xFF1B55D6);
+    const Color activeGreen = Color(0xFF00E676);
+    
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: Text('Olá, $nome', style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.blue),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () {
-              _socketService.desligarRadar();
-              context.read<AuthProvider>().logout();
-            },
-          ),
-        ],
-      ),
-      body: Center(
-        child: GestureDetector(
-          onTap: _toggleModoTrabalho,
-          child: Container(
-            width: 200,
-            height: 200,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: _isOnline ? Colors.blue : Colors.grey[800],
-              boxShadow: [
-                BoxShadow(
-                  color: (_isOnline ? Colors.blue : Colors.grey[800]!)
-                      .withValues(alpha: 0.5),
-                  blurRadius: 20,
-                  spreadRadius: 5,
-                ),
-              ],
+      backgroundColor: darkBg,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Custom AppBar
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 20.0),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: mockupBlue,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.build_rounded, color: Colors.white),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Olá, $nome!',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          _isOnline ? 'Disponível para chamados' : 'Atualmente offline',
+                          style: TextStyle(
+                            color: _isOnline ? activeGreen : Colors.white54,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.exit_to_app_rounded, color: Colors.white54),
+                    onPressed: () {
+                      _socketService.desligarRadar();
+                      context.read<AuthProvider>().logout();
+                    },
+                  ),
+                ],
+              ),
             ),
-            child: Center(
-              child: Text(
-                _isOnline ? 'FICAR\nOFFLINE' : 'FICAR\nONLINE',
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+
+            // Top Cards
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: darkCard,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.work_rounded, color: Colors.orange, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text('Chamados hoje', style: TextStyle(color: Colors.white54, fontSize: 10)),
+                              Text('0', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: darkCard,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: (_isOnline ? activeGreen : Colors.redAccent).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(Icons.satellite_alt_rounded, color: _isOnline ? activeGreen : Colors.redAccent, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Status', style: TextStyle(color: Colors.white54, fontSize: 10)),
+                              Text(
+                                _isOnline ? 'Online' : 'Offline',
+                                style: TextStyle(
+                                  color: _isOnline ? activeGreen : Colors.redAccent,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const Spacer(),
+
+            // Radar Button
+            GestureDetector(
+              onTap: _toggleModoTrabalho,
+              child: AnimatedBuilder(
+                animation: _pulseController,
+                builder: (context, child) {
+                  return Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Outer glow ring
+                      if (_isOnline)
+                        Container(
+                          width: 280 + (_pulseController.value * 40),
+                          height: 280 + (_pulseController.value * 40),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: activeGreen.withValues(alpha: 0.2 - (_pulseController.value * 0.2)),
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      // Inner glow ring
+                      if (_isOnline)
+                        Container(
+                          width: 230 + (_pulseController.value * 30),
+                          height: 230 + (_pulseController.value * 30),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: activeGreen.withValues(alpha: 0.1 - (_pulseController.value * 0.1)),
+                            border: Border.all(
+                              color: activeGreen.withValues(alpha: 0.4 - (_pulseController.value * 0.4)),
+                              width: 2,
+                            ),
+                          ),
+                        ),
+                      // Core Button
+                      Container(
+                        width: 200,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: _isOnline ? activeGreen : darkCard,
+                          boxShadow: _isOnline
+                              ? [BoxShadow(color: activeGreen.withValues(alpha: 0.6), blurRadius: 40, spreadRadius: 10)]
+                              : [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 20)],
+                          border: Border.all(
+                            color: _isOnline ? Colors.white.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
+                            width: 2,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.satellite_alt_rounded,
+                              size: 48,
+                              color: _isOnline ? Colors.black87 : Colors.white54,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              _isOnline ? 'ONLINE' : 'OFFLINE',
+                              style: TextStyle(
+                                color: _isOnline ? Colors.black87 : Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 2.0,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _isOnline ? 'Toque para parar' : 'Toque para iniciar',
+                              style: TextStyle(
+                                color: _isOnline ? Colors.black54 : Colors.white54,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+
+            const Spacer(),
+
+            // Bottom Alert
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                decoration: BoxDecoration(
+                  color: darkCard,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _isOnline ? activeGreen.withValues(alpha: 0.3) : Colors.transparent,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.notifications_active_rounded,
+                      color: _isOnline ? Colors.amber : Colors.white38,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        _isOnline
+                            ? 'Radar ativo! Você será notificado ao receber um chamado próximo.'
+                            : 'Radar inativo. Fique online para receber novos chamados na sua região.',
+                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );
