@@ -13,6 +13,7 @@ const pool = require('../config/database');
 const logger = require('../utils/logger');
 const { AppError } = require('../middlewares/errorHandler');
 const { TAXA_DESLOCAMENTO, MAPA_CATEGORIAS } = require('../utils/constants');
+const { analisarProblema } = require('../utils/precificador');
 
 // ─── CRIAR CHAMADO ──────────────────────────────────────────
 const criarChamado = async (req, res, next) => {
@@ -42,6 +43,9 @@ const criarChamado = async (req, res, next) => {
         // Tenta usar o mapeamento, ignora case
         const catSoli = categoria_solicitada;
         const categoriaMapeada = MAPA_CATEGORIAS[catSoli] || catSoli;
+
+        // --- INTEGRAÇÃO COM MOTOR DE PRECIFICAÇÃO ---
+        const estimativa = analisarProblema(categoriaMapeada, problema_descricao);
 
         // ── POSTIGS: Busca espacial com índice GiST (O(log n)) ──
         // ST_DWithin usa o índice GIST automaticamente (vs Haversine que faz full table scan)
@@ -74,10 +78,10 @@ const criarChamado = async (req, res, next) => {
         // 1. AGORA NÓS GRAVAMOS SEMPRE NA BASE DE DADOS PRIMEIRO!
         const novoChamado = await client.query(
             `INSERT INTO chamados_express
-            (cliente_id, categoria_solicitada, problema_descricao, latitude_destino, longitude_destino, status)
-            VALUES ($1, $2, $3, $4, $5, 'procurando_profissional')
+            (cliente_id, categoria_solicitada, problema_descricao, latitude_destino, longitude_destino, status, valor_estimado_min, valor_estimado_max)
+            VALUES ($1, $2, $3, $4, $5, 'procurando_profissional', $6, $7)
             RETURNING id, status, criado_em`,
-            [cliente_id, categoria_solicitada, problema_descricao, latitude_destino, longitude_destino]
+            [cliente_id, categoria_solicitada, problema_descricao, latitude_destino, longitude_destino, estimativa.preco_minimo, estimativa.preco_maximo]
         );
 
         // Confirma a gravação no PostGIS (Agora sim, vai aparecer no DBeaver/pgAdmin!)
@@ -112,8 +116,10 @@ const criarChamado = async (req, res, next) => {
                         chamado_id: novoChamado.rows[0].id,
                         categoria: categoria_solicitada,
                         descricao: problema_descricao,
-                        distancia_metros: Math.round(profissional.distancia_km * 1000), // convertendo km pra metros caso necessário, ou só profissional.distancia_metros se existisse na query. A query retorna distancia_km.
-                        valor_sugerido: TAXA_DESLOCAMENTO // A taxa de deslocamento que planeámos
+                        distancia_metros: Math.round(profissional.distancia_km * 1000), 
+                        valor_sugerido: estimativa.preco_sugerido, 
+                        valor_estimado_min: estimativa.preco_minimo,
+                        valor_estimado_max: estimativa.preco_maximo
                         // 🔒 Segurança: Não enviamos a morada exata nem as coordenadas 
                         // do cliente até o profissional aceitar o serviço!
                     });
@@ -127,6 +133,11 @@ const criarChamado = async (req, res, next) => {
         return res.status(201).json({
             mensagem: "Emergência disparada! Profissionais notificados.",
             chamado: novoChamado.rows[0],
+            estimativa: {
+                min: estimativa.preco_minimo,
+                max: estimativa.preco_maximo,
+                sugerido: estimativa.preco_sugerido
+            },
             profissionais_encontrados_no_raio: busca.rows.length,
             profissionais_online_notificados: profissionaisNotificados
         });
@@ -318,10 +329,11 @@ const finalizarChamado = async (req, res, next) => {
         await client.query('BEGIN');
 
         const { id } = req.params;
+        const { valor_cobrado } = req.body;
         const profissional_id = req.usuario.id;
 
         const verChamado = await client.query(
-            'SELECT status, profissional_id, cliente_id FROM chamados_express WHERE id = $1 FOR UPDATE',
+            'SELECT status, profissional_id, cliente_id, valor_estimado_min, valor_estimado_max FROM chamados_express WHERE id = $1 FOR UPDATE',
             [id]
         );
 
@@ -335,18 +347,33 @@ const finalizarChamado = async (req, res, next) => {
             return res.status(403).json({ erro: "Você não tem permissão para finalizar este pedido." });
         }
 
-        if (verChamado.rows[0].status !== 'em_servico') {
+        if (!valor_cobrado || isNaN(valor_cobrado)) {
             await client.query('ROLLBACK');
-            return res.status(400).json({ erro: "O pedido precisa estar 'em_servico' para ser finalizado." });
+            return res.status(400).json({ erro: "É necessário informar o valor cobrado pelo serviço." });
+        }
+
+        const minEstimado = parseFloat(verChamado.rows[0].valor_estimado_min);
+        const maxEstimado = parseFloat(verChamado.rows[0].valor_estimado_max);
+        
+        // Tolerância de 30%
+        if (minEstimado && maxEstimado) {
+            const limiteMax = maxEstimado * 1.30;
+            if (valor_cobrado < minEstimado || valor_cobrado > limiteMax) {
+                await client.query('ROLLBACK');
+                return res.status(400).json({ 
+                    erro: `O valor cobrado (R$ ${valor_cobrado}) está fora do intervalo permitido. Mínimo: R$ ${minEstimado}, Máximo: R$ ${limiteMax.toFixed(2)}.` 
+                });
+            }
         }
 
         const atualizacao = await client.query(
             `UPDATE chamados_express
              SET status = 'finalizado',
+                 valor_cobrado = $2,
                  finalizado_em = CURRENT_TIMESTAMP
              WHERE id = $1
-             RETURNING id, status, finalizado_em, cliente_id`,
-            [id]
+             RETURNING id, status, finalizado_em, cliente_id, valor_cobrado, valor_estimado_min, valor_estimado_max, categoria_solicitada, problema_descricao`,
+            [id, valor_cobrado]
         );
 
         await client.query('COMMIT');
@@ -356,7 +383,10 @@ const finalizarChamado = async (req, res, next) => {
             io.to(`cliente:${atualizacao.rows[0].cliente_id}`).emit('atualizacao_chamado', {
                 chamado_id: id,
                 status_novo: 'finalizado',
-                mensagem: "Serviço finalizado com sucesso!"
+                mensagem: "Serviço finalizado com sucesso!",
+                valor_cobrado: atualizacao.rows[0].valor_cobrado,
+                categoria: atualizacao.rows[0].categoria_solicitada,
+                descricao: atualizacao.rows[0].problema_descricao
             });
         }
 

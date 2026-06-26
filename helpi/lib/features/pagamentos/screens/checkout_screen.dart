@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../chamados/providers/chamados_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import 'pagamento_nativo_screen.dart';
 
 class CheckoutScreen extends StatelessWidget {
   final Map<String, dynamic> data;
@@ -85,12 +86,10 @@ class CheckoutScreen extends StatelessWidget {
                       padding: EdgeInsets.symmetric(vertical: 12),
                       child: Divider(height: 1),
                     ),
-                    _buildRow('Valor do Serviço', 'A calcular...'),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Divider(height: 1),
+                    _buildRow(
+                      'Valor do Serviço', 
+                      data['valor_cobrado'] != null ? 'R\$ ${data['valor_cobrado']}' : '---'
                     ),
-                    _buildRow('Taxa Helpi', 'A calcular...'),
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 16),
                       child: Divider(height: 1, thickness: 2),
@@ -103,7 +102,7 @@ class CheckoutScreen extends StatelessWidget {
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          'A analisar',
+                          data['valor_cobrado'] != null ? 'R\$ ${data['valor_cobrado']}' : '---',
                           style: TextStyle(
                             fontSize: 18, 
                             fontWeight: FontWeight.bold,
@@ -130,12 +129,15 @@ class CheckoutScreen extends StatelessWidget {
                     elevation: 0,
                   ),
                   onPressed: () {
-                    // Ao fechar a caixa registadora, resetamos o mapa
-                    context.read<ChamadosProvider>().resetarEstado();
-                    Navigator.pop(context);
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PagamentoNativoScreen(data: data),
+                      ),
+                    );
                   },
                   child: const Text(
-                    'PAGAR E AVALIAR',
+                    'PAGAR',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,

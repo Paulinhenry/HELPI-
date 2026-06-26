@@ -7,10 +7,14 @@ import '../../../core/services/location_service.dart';
 import '../../../core/services/socket_service.dart';
 import '../services/chamados_service.dart';
 import '../services/categorias_service.dart';
+import '../../pagamentos/services/pagamento_service.dart';
 
 class ChamadosProvider with ChangeNotifier {
   final ChamadosService _chamadosService = ChamadosService();
   final CategoriasService _categoriasService = CategoriasService();
+  final PagamentoService _pagamentoService = PagamentoService();
+
+  Timer? _debounceEstimativa;
 
   Position? _posicaoAtual;
   bool _carregando = true;
@@ -21,6 +25,12 @@ class ChamadosProvider with ChangeNotifier {
   bool _isProcurando = false;
   String? _idChamadoAtual;
   String _descricaoProblema = "Emergência urgente solicitada via Helpi App";
+  
+  // Estimativas
+  int? _estimativaMin;
+  int? _estimativaMax;
+  int? _estimativaSugerida;
+  bool _calculandoEstimativa = false;
 
   // Tracking do Profissional
   bool _isProfissionalACaminho = false;
@@ -47,6 +57,11 @@ class ChamadosProvider with ChangeNotifier {
   int get segundosRestantes => _segundosRestantes;
   String get descricaoProblema => _descricaoProblema;
   
+  int? get estimativaMin => _estimativaMin;
+  int? get estimativaMax => _estimativaMax;
+  int? get estimativaSugerida => _estimativaSugerida;
+  bool get calculandoEstimativa => _calculandoEstimativa;
+  
   bool get isProfissionalACaminho => _isProfissionalACaminho;
   Position? get posicaoProfissional => _posicaoProfissional;
   String get nomeProfissional => _nomeProfissional;
@@ -55,13 +70,41 @@ class ChamadosProvider with ChangeNotifier {
   void setCategoria(String? categoria) {
     _categoriaSelecionada = categoria;
     notifyListeners();
+    _atualizarEstimativa();
   }
 
   void setDescricao(String descricao) {
     if (descricao.trim().isNotEmpty) {
       _descricaoProblema = descricao;
       notifyListeners();
+      _atualizarEstimativa();
     }
+  }
+
+  void _atualizarEstimativa() {
+    if (_categoriaSelecionada == null || _descricaoProblema.isEmpty) return;
+
+    if (_debounceEstimativa?.isActive ?? false) _debounceEstimativa!.cancel();
+
+    _calculandoEstimativa = true;
+    notifyListeners();
+
+    _debounceEstimativa = Timer(const Duration(milliseconds: 800), () async {
+      try {
+        final estimativa = await _pagamentoService.estimarPreco(_categoriaSelecionada!, _descricaoProblema);
+        _estimativaMin = estimativa['preco_minimo'];
+        _estimativaMax = estimativa['preco_maximo'];
+        _estimativaSugerida = estimativa['preco_sugerido'];
+      } catch (e) {
+        debugPrint('Erro ao estimar preço: $e');
+        _estimativaMin = null;
+        _estimativaMax = null;
+        _estimativaSugerida = null;
+      } finally {
+        _calculandoEstimativa = false;
+        notifyListeners();
+      }
+    });
   }
 
   Future<void> inicializar() async {
@@ -275,6 +318,9 @@ class ChamadosProvider with ChangeNotifier {
     _isProcurando = false;
     _isProfissionalACaminho = false;
     _posicaoProfissional = null;
+    _estimativaMin = null;
+    _estimativaMax = null;
+    _estimativaSugerida = null;
     SocketService().pararDeOuvirLocalizacao();
     notifyListeners();
   }

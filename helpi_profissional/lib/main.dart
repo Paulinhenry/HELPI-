@@ -9,7 +9,8 @@ import 'core/providers/auth_provider.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/chamados/screens/mapa_rota_screen.dart';
 import 'services/chamado_service.dart';
-import 'services/socket_service.dart'; // O ficheiro que te dei na resposta anterior
+import 'services/socket_service.dart'; 
+import 'features/pagamentos/screens/pagamento_confirmado_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -114,6 +115,16 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
       _socketService.ligarRadar(
         widget.profissionalId,
         _mostrarAlertaDeTrabalho,
+        onPagamentoConfirmado: (dados) {
+          if (!mounted) return;
+          final valor = double.tryParse(dados['valor']?.toString() ?? '0') ?? 0.0;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PagamentoConfirmadoScreen(valor: valor),
+            ),
+          );
+        },
       );
     } else {
       WakelockPlus.disable();
@@ -145,9 +156,36 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
           '🚨 NOVO SERVIÇO!',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        content: Text(
-          'Categoria: ${dados['categoria']}\nProblema: ${dados['descricao']}\nDistância: ${dados['distancia_metros']}m',
-          style: const TextStyle(color: Colors.white70),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Categoria: ${dados['categoria']}\nProblema: ${dados['descricao']}\nDistância: ${dados['distancia_metros']}m',
+              style: const TextStyle(color: Colors.white70),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.greenAccent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.attach_money_rounded, color: Colors.greenAccent),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Referência: R\$ ${dados['valor_estimado_min'] ?? '--'} - R\$ ${dados['valor_estimado_max'] ?? '--'}',
+                      style: const TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -201,6 +239,8 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
                       categoria: chamado['categoria_solicitada'] ?? dados['categoria'] ?? '',
                       descricao: chamado['problema_descricao'] ?? dados['descricao'] ?? '',
                       clienteId: chamado['cliente_id']?.toString(),
+                      valorEstimadoMin: dados['valor_estimado_min'] != null ? double.tryParse(dados['valor_estimado_min'].toString()) : null,
+                      valorEstimadoMax: dados['valor_estimado_max'] != null ? double.tryParse(dados['valor_estimado_max'].toString()) : null,
                     ),
                   ),
                 );

@@ -11,7 +11,11 @@ class SocketService {
 
   io.Socket? _socket;
 
-  Future<void> ligarRadar(String profissionalId, Function(Map<String, dynamic>) onAlertaTrabalho) async {
+  Future<void> ligarRadar(
+    String profissionalId, 
+    Function(Map<String, dynamic>) onAlertaTrabalho,
+    {Function(Map<String, dynamic>)? onPagamentoConfirmado}
+  ) async {
     if (_socket != null && _socket!.connected) return;
 
     // Obtém URL do Env (remove /api/v1 para os websockets)
@@ -55,9 +59,15 @@ class SocketService {
     // Ouve a sirene vinda do Node.js
     _socket!.on('novo_chamado_emergencia', (data) {
       debugPrint('[Radar] 🚨 NOVO CHAMADO RECEBIDO: $data');
-      // Converte o objeto dinâmico do socket num mapa do Dart
       final Map<String, dynamic> mapaAviso = Map<String, dynamic>.from(data);
       onAlertaTrabalho(mapaAviso);
+    });
+
+    _socket!.on('pagamento_confirmado', (data) {
+      debugPrint('[Radar] 💰 PAGAMENTO CONFIRMADO: $data');
+      if (onPagamentoConfirmado != null) {
+        onPagamentoConfirmado(Map<String, dynamic>.from(data));
+      }
     });
 
     _socket!.onDisconnect((_) {

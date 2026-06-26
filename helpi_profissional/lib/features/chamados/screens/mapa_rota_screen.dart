@@ -25,7 +25,9 @@ class MapaRotaScreen extends StatefulWidget {
   final double longitudeDestino;
   final String categoria;
   final String descricao;
-  final String? clienteId; // Necessário para emitir localização em tempo real
+  final String? clienteId; 
+  final double? valorEstimadoMin;
+  final double? valorEstimadoMax;
 
   const MapaRotaScreen({
     super.key,
@@ -35,6 +37,8 @@ class MapaRotaScreen extends StatefulWidget {
     required this.categoria,
     required this.descricao,
     this.clienteId,
+    this.valorEstimadoMin,
+    this.valorEstimadoMax,
   });
 
   @override
@@ -295,12 +299,85 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
     }
   }
 
+  /// Abre o diálogo para inserir o preço
+  void _abrirDialogoPreco() {
+    final TextEditingController precoController = TextEditingController();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: const Text('💸 Definir Preço Final', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'O serviço foi concluído. Insira o valor a ser cobrado do cliente.',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 12),
+            if (widget.valorEstimadoMin != null)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.greenAccent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  'Estimativa Original: R\$ ${widget.valorEstimadoMin} - R\$ ${widget.valorEstimadoMax}',
+                  style: const TextStyle(color: Colors.greenAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+              ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: precoController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                prefixText: 'R\$ ',
+                prefixStyle: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                filled: true,
+                fillColor: Colors.black45,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCELAR', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final valorStr = precoController.text.replaceAll(',', '.');
+              final valor = double.tryParse(valorStr);
+              if (valor == null || valor <= 0) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Insira um valor válido.'), backgroundColor: Colors.red),
+                );
+                return;
+              }
+              Navigator.pop(context);
+              _finalizarServico(valor);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF448AFF)),
+            child: const Text('COBRAR', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Finaliza o serviço e retorna ao radar
-  Future<void> _finalizarServico() async {
+  Future<void> _finalizarServico(double valorCobrado) async {
     setState(() => _finalizandoServico = true);
 
     try {
-      await _chamadoService.finalizarChamado(widget.chamadoId);
+      await _chamadoService.finalizarChamado(widget.chamadoId, valorCobrado: valorCobrado);
 
       if (mounted) {
         setState(() => _finalizandoServico = false);
@@ -636,7 +713,7 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
                                 onPressed:
                                     (_registrandoChegada || _finalizandoServico)
                                         ? null
-                                        : (_chegou ? _finalizarServico : _registrarChegada),
+                                        : (_chegou ? _abrirDialogoPreco : _registrarChegada),
                                 icon:
                                     (_registrandoChegada || _finalizandoServico)
                                         ? const SizedBox(
