@@ -7,7 +7,7 @@ class AuthService {
 
   /// Efetua login de um cliente na API e devolve os Tokens JWT.
   /// Lança uma Exception com mensagem amigável se falhar.
-  Future<Map<String, String>?> loginCliente(String email, String senha) async {
+  Future<Map<String, dynamic>?> loginCliente(String email, String senha) async {
     try {
       // Chamada limpa: sem localhost, sem jsonEncode — o Dio trata de tudo
       final response = await _apiClient.dio.post(
@@ -41,6 +41,7 @@ class AuthService {
       }
       throw Exception('Erro de ligação ao servidor. Tente novamente.');
     } catch (e) {
+      print('Erro inesperado no loginCliente: $e');
       throw Exception('Ocorreu um erro inesperado.');
     }
   }

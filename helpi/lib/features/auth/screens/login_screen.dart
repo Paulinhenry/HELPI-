@@ -41,7 +41,9 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (tokens != null && mounted) {
-        await context.read<AuthProvider>().login(tokens['access_token']!, tokens['refresh_token']!);
+        final accessToken = tokens['access_token']?.toString() ?? '';
+        final refreshToken = tokens['refresh_token']?.toString() ?? '';
+        await context.read<AuthProvider>().login(accessToken, refreshToken);
       }
     } catch (e) {
       if (mounted) {
