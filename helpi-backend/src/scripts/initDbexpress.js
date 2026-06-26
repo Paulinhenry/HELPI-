@@ -41,7 +41,11 @@ const criarArquiteturaOnDemand = async () => {
                 chegou_ao_local_em TIMESTAMP WITH TIME ZONE,
                 finalizado_em TIMESTAMP WITH TIME ZONE,
                 
-                valor_estimado DECIMAL(10,2)
+                valor_estimado DECIMAL(10,2),
+                valor_estimado_min DECIMAL(10,2),
+                valor_estimado_max DECIMAL(10,2),
+                valor_cobrado DECIMAL(10,2),
+                pagamento_status VARCHAR(20) DEFAULT 'pendente'
             );
         `);
         console.log('✅ Tabela "chamados_express" criada com sucesso!');

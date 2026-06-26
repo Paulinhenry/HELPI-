@@ -42,9 +42,12 @@ class ChamadoService {
   }
 
   /// Finaliza o serviço prestado.
-  Future<Map<String, dynamic>> finalizarChamado(String chamadoId) async {
+  Future<Map<String, dynamic>> finalizarChamado(String chamadoId, {required double valorCobrado}) async {
     try {
-      final response = await _dio.put('/chamados/$chamadoId/finalizar');
+      final response = await _dio.put(
+        '/chamados/$chamadoId/finalizar',
+        data: {'valor_cobrado': valorCobrado},
+      );
       return Map<String, dynamic>.from(response.data['chamado']);
     } on DioException catch (e) {
       final mensagem = e.response?.data['erro'] ?? 'Erro ao finalizar serviço';

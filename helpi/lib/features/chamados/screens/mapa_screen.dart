@@ -505,6 +505,41 @@ class _MapaScreenViewState extends State<MapaScreenView> {
               ),
               const SizedBox(height: 24),
 
+              // Estimate UI
+              if (provider.categoriaSelecionada != null)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 24),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: mockupBlue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: mockupBlue.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.account_balance_wallet_rounded, color: mockupBlue, size: 28),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Estimativa de Custo (Referência)', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                            const SizedBox(height: 4),
+                            provider.calculandoEstimativa
+                              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: mockupBlue))
+                              : Text(
+                                  provider.estimativaMin != null 
+                                    ? 'R\$ ${provider.estimativaMin} - R\$ ${provider.estimativaMax}'
+                                    : 'A calcular...',
+                                  style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
               // Find Professional Button
               SizedBox(
                 height: 56,
