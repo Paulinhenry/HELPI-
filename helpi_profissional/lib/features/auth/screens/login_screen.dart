@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/auth_provider.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -208,6 +209,36 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                       ),
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Criar conta
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Não tem uma conta? ',
+                          style: TextStyle(color: Colors.white54, fontSize: 13),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const RegisterScreen(),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            'Criar agora',
+                            style: TextStyle(
+                              color: mockupBlue,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 48),
 
