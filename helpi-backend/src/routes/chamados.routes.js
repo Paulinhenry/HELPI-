@@ -147,6 +147,10 @@ const { validarCriacaoChamado } = require('../middlewares/validators/chamadoVali
 router.get('/', authCliente, chamadosController.listarMeusChamados);
 router.post('/', authCliente, validarCriacaoChamado, chamadosController.criarChamado);
 
+// --- CRASH RECOVERY: Verifica se o profissional tem chamado ativo ---
+// IMPORTANTE: Deve ficar ANTES das rotas com :id para o Express não confundir 'em-andamento' com um UUID
+router.get('/em-andamento', authProfissional, chamadosController.verificarChamadoAtivo);
+
 // --- NOVA ROTA DE CANCELAMENTO AQUI ---
 router.patch('/:id/cancelar', authCliente, chamadosController.cancelarChamado);
 

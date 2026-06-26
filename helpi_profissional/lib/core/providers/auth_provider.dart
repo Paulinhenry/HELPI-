@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
 import '../network/app_client.dart';
+import '../../services/chamado_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final ApiClient _apiClient = ApiClient();
@@ -10,9 +11,13 @@ class AuthProvider with ChangeNotifier {
   String? _profissionalId;
   String? _nome;
 
+  // CRASH RECOVERY: Guarda o chamado ativo (se existir) para o roteador
+  Map<String, dynamic>? _chamadoAtivo;
+
   bool get isAuthenticated => _isAuthenticated;
   String? get profissionalId => _profissionalId;
   String? get nome => _nome;
+  Map<String, dynamic>? get chamadoAtivo => _chamadoAtivo;
 
   Future<void> checkLoginStatus() async {
     final prefs = await SharedPreferences.getInstance();
@@ -21,7 +26,25 @@ class AuthProvider with ChangeNotifier {
       _isAuthenticated = true;
       _profissionalId = prefs.getString('usuarioId'); // Lê o ID real do BD
       _nome = prefs.getString('nome');
+
+      // CRASH RECOVERY: Pergunta ao servidor se há corrida ativa
+      // Se o profissional tinha um chamado quando a bateria morreu,
+      // o roteador vai atirá-lo direto para o MapaRotaScreen
+      try {
+        final chamadoService = ChamadoService();
+        _chamadoAtivo = await chamadoService.verificarChamadoAtivo();
+      } catch (e) {
+        // Se falhar (offline, timeout), deixa ir para o Radar normalmente
+        _chamadoAtivo = null;
+        debugPrint('[CrashRecovery] Não foi possível verificar chamado ativo: $e');
+      }
     }
+    notifyListeners();
+  }
+
+  /// Limpa o chamado ativo (quando o profissional volta ao Radar após finalizar)
+  void limparChamadoAtivo() {
+    _chamadoAtivo = null;
     notifyListeners();
   }
 
@@ -44,6 +67,7 @@ class AuthProvider with ChangeNotifier {
       _isAuthenticated = true;
       _profissionalId = profissional['id'];
       _nome = profissional['nome'];
+      _chamadoAtivo = null; // Login fresco, sem chamado ativo
       
       notifyListeners();
     } on DioException catch (e) {
@@ -57,6 +81,7 @@ class AuthProvider with ChangeNotifier {
     _isAuthenticated = false;
     _profissionalId = null;
     _nome = null;
+    _chamadoAtivo = null;
     notifyListeners();
   }
 }

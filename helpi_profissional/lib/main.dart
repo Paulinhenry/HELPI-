@@ -37,10 +37,27 @@ class HelpiProfissionalApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         scaffoldBackgroundColor: Colors.black,
       ),
-      // O Roteador Dinâmico:
+      // O Roteador Dinâmico (com Crash Recovery):
       home: Consumer<AuthProvider>(
         builder: (context, auth, _) {
           if (auth.isAuthenticated) {
+            // CRASH RECOVERY: Se o servidor disse que há corrida ativa,
+            // atira direto para o mapa (ex: bateria morreu no meio do chamado)
+            if (auth.chamadoAtivo != null) {
+              final c = auth.chamadoAtivo!;
+              // Limpa o estado para não criar loop se o profissional
+              // voltar atrás do mapa e o widget rebuildar
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                auth.limparChamadoAtivo();
+              });
+              return MapaRotaScreen(
+                chamadoId: c['id'].toString(),
+                latitudeDestino: (c['latitude_destino'] as num).toDouble(),
+                longitudeDestino: (c['longitude_destino'] as num).toDouble(),
+                categoria: c['categoria_solicitada'] ?? '',
+                descricao: c['problema_descricao'] ?? '',
+              );
+            }
             return RadarScreen(profissionalId: auth.profissionalId!);
           }
           return const LoginScreen();

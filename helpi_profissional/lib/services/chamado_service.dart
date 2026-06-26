@@ -40,6 +40,24 @@ class ChamadoService {
       throw Exception(mensagem);
     }
   }
+
+  /// CRASH RECOVERY: Verifica se o profissional tem um chamado em andamento.
+  /// Chamado logo no arranque da app (checkLoginStatus).
+  /// Retorna os dados do chamado ativo ou null se não houver nenhum.
+  Future<Map<String, dynamic>?> verificarChamadoAtivo() async {
+    try {
+      final response = await _dio.get('/chamados/em-andamento');
+      final chamadoAtivo = response.data['chamado_ativo'];
+      if (chamadoAtivo != null) {
+        return Map<String, dynamic>.from(chamadoAtivo);
+      }
+      return null;
+    } on DioException {
+      // Se falhar (sem internet, servidor offline), retorna null
+      // para o profissional seguir normalmente para o Radar
+      return null;
+    }
+  }
 }
 
 /// Exceção quando outro profissional já aceitou o chamado.
