@@ -175,16 +175,6 @@ class _MapaScreenViewState extends State<MapaScreenView> {
     }
   }
 
-  Color _getColor(String colorName) {
-    switch(colorName) {
-      case 'orange': return Colors.orange;
-      case 'blue': return Colors.blue;
-      case 'amber': return Colors.amber;
-      case 'teal': return Colors.teal;
-      case 'blueGrey': return Colors.blueGrey;
-      default: return Colors.grey;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -236,14 +226,24 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                       zoomControlsEnabled: false,
                       mapToolbarEnabled: false,
                     ),
-                    Align(
-                      alignment: Alignment.bottomCenter,
-                      child: provider.isProfissionalACaminho
-                        ? _construirPainelRastreamento(provider)
-                        : provider.isProcurando 
-                          ? _construirPainelBuscando(provider) 
-                          : _construirPainelSolicitacao(provider),
-                    ),
+                    provider.isProfissionalACaminho
+                        ? Align(
+                            alignment: Alignment.bottomCenter,
+                            child: _construirPainelRastreamento(provider),
+                          )
+                        : provider.isProcurando
+                            ? Align(
+                                alignment: Alignment.bottomCenter,
+                                child: _construirPainelBuscando(provider),
+                              )
+                            : DraggableScrollableSheet(
+                                initialChildSize: 0.45,
+                                minChildSize: 0.15,
+                                maxChildSize: 0.75,
+                                builder: (context, scrollController) {
+                                  return _construirPainelSolicitacao(provider, scrollController);
+                                },
+                              ),
                   ],
                 ),
     );
@@ -330,45 +330,71 @@ class _MapaScreenViewState extends State<MapaScreenView> {
     );
   }
 
-  Widget _construirPainelSolicitacao(ChamadosProvider provider) {
+  Widget _construirPainelSolicitacao(ChamadosProvider provider, ScrollController scrollController) {
+    const Color mockupBlue = Color(0xFF1B55D6);
+    
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: const BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 20, offset: const Offset(0, -5))],
+        borderRadius: const BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 20,
+            offset: const Offset(0, -5),
+          )
+        ],
       ),
       child: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
+          controller: scrollController,
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 50,
-                    height: 5,
-                    decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Drag Handle
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: mockupBlue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.keyboard_arrow_up_rounded, color: mockupBlue, size: 16),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Arraste para expandir',
+                        style: TextStyle(color: mockupBlue, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 24),
-                Row(
+              ),
+              const SizedBox(height: 24),
+
+              // Location Box
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4F6F9),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(color: AppColors.background, shape: BoxShape.circle),
-                      child: const Icon(Icons.my_location, color: AppColors.primaryColor, size: 20),
-                    ),
+                    const Icon(Icons.location_on_outlined, color: mockupBlue, size: 24),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("Local Atual", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          const Text("Sua localização", style: TextStyle(fontSize: 12, color: Colors.black54)),
                           Text(
                             provider.enderecoAtual,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -377,26 +403,20 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _descricaoController,
-                  decoration: InputDecoration(
-                    labelText: 'Qual o problema?',
-                    hintText: 'Descreva a emergência brevemente',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                  onChanged: (val) => provider.setDescricao(val),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Escolha a categoria',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 100,
-                  child: provider.categorias.isEmpty 
+              ),
+              const SizedBox(height: 24),
+
+              // Categories Title
+              const Text(
+                'Serviços disponíveis',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+              ),
+              const SizedBox(height: 16),
+
+              // Categories Horizontal List
+              SizedBox(
+                height: 90,
+                child: provider.categorias.isEmpty
                     ? const Center(child: Text("Nenhuma categoria disponível"))
                     : ListView.builder(
                         scrollDirection: Axis.horizontal,
@@ -404,30 +424,36 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                         itemBuilder: (context, index) {
                           final cat = provider.categorias[index];
                           final isSelected = provider.categoriaSelecionada == cat['nome'];
-                          final catColor = _getColor(cat['cor']);
 
                           return GestureDetector(
                             onTap: () => provider.setCategoria(cat['nome']),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
-                              margin: const EdgeInsets.only(right: 16),
-                              width: 85,
+                              margin: const EdgeInsets.only(right: 12),
+                              width: 80,
                               decoration: BoxDecoration(
-                                color: isSelected ? catColor.withValues(alpha: 0.15) : AppColors.background,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: isSelected ? catColor : Colors.transparent, width: 2),
+                                color: isSelected ? Colors.white : const Color(0xFFF4F6F9),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isSelected ? mockupBlue : Colors.transparent,
+                                  width: 2,
+                                ),
                               ),
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(_getIconData(cat['icone']), color: isSelected ? catColor : Colors.grey[600], size: 32),
+                                  Icon(
+                                    _getIconData(cat['icone']),
+                                    color: isSelected ? Colors.black87 : Colors.black54,
+                                    size: 28,
+                                  ),
                                   const SizedBox(height: 8),
                                   Text(
                                     cat['nome'],
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                      color: isSelected ? AppColors.textPrimary : Colors.grey[600],
+                                      color: isSelected ? Colors.black87 : Colors.black54,
                                     ),
                                   ),
                                 ],
@@ -436,33 +462,52 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                           );
                         },
                       ),
+              ),
+              const SizedBox(height: 24),
+
+              // Description Field
+              TextField(
+                controller: _descricaoController,
+                style: const TextStyle(fontSize: 14),
+                decoration: InputDecoration(
+                  labelText: 'Qual o problema?',
+                  hintText: 'Descreva a emergência brevemente',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primaryColor,
-                      disabledBackgroundColor: Colors.grey[300],
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: provider.categoriaSelecionada == null ? 0 : 5,
-                    ),
-                    onPressed: provider.categoriaSelecionada == null 
-                        ? null 
-                        : () => provider.solicitarProfissional(),
-                    child: Text(
-                      provider.categoriaSelecionada == null ? 'Escolha um serviço' : 'ENCONTRAR PROFISSIONAL',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: provider.categoriaSelecionada == null ? Colors.grey[600] : Colors.white,
-                      ),
+                onChanged: (val) => provider.setDescricao(val),
+              ),
+              const SizedBox(height: 24),
+
+              // Find Professional Button
+              SizedBox(
+                height: 56,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: mockupBlue,
+                    disabledBackgroundColor: Colors.grey[300],
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                  icon: Icon(
+                    Icons.search,
+                    color: provider.categoriaSelecionada == null ? Colors.grey[500] : Colors.white,
+                  ),
+                  label: Text(
+                    'ENCONTRAR PROFISSIONAL',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.0,
+                      color: provider.categoriaSelecionada == null ? Colors.grey[500] : Colors.white,
                     ),
                   ),
+                  onPressed: provider.categoriaSelecionada == null
+                      ? null
+                      : () => provider.solicitarProfissional(),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
