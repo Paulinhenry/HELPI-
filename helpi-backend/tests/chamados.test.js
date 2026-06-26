@@ -89,7 +89,7 @@ describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
         const res = await request(app)
             .put(`/api/chamados/${chamadoId}/finalizar`)
             .set('Authorization', `Bearer ${tokenProfissional}`)
-            .send({ profissional_id: profissionalTesteId });
+            .send({ profissional_id: profissionalTesteId, valor_cobrado: 100.00 });
 
         expect(res.statusCode).toEqual(200);
         expect(res.body.chamado.status).toBe('finalizado');

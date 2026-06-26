@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const { estimarPreco, processarPagamento, webhookMercadoPago } = require('../controllers/pagamentos.controller');
-const { requireAuth } = require('../middlewares/auth');
+const authCliente = require('../middlewares/authCliente');
 
 // Rota de estimativa de preço
-router.post('/estimar', requireAuth, estimarPreco);
+router.post('/estimar', authCliente, estimarPreco);
 
 // Rota para processar pagamento nativo
-router.post('/processar', requireAuth, processarPagamento);
+router.post('/processar', authCliente, processarPagamento);
 
 // Webhook do Mercado Pago (público)
 router.post('/webhook', webhookMercadoPago);
