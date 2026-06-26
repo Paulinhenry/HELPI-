@@ -6,7 +6,7 @@ import '../../services/chamado_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final ApiClient _apiClient = ApiClient();
-  
+
   bool _isAuthenticated = false;
   String? _profissionalId;
   String? _nome;
@@ -36,7 +36,9 @@ class AuthProvider with ChangeNotifier {
       } catch (e) {
         // Se falhar (offline, timeout), deixa ir para o Radar normalmente
         _chamadoAtivo = null;
-        debugPrint('[CrashRecovery] Não foi possível verificar chamado ativo: $e');
+        debugPrint(
+          '[CrashRecovery] Não foi possível verificar chamado ativo: $e',
+        );
       }
     }
     notifyListeners();
@@ -72,10 +74,12 @@ class AuthProvider with ChangeNotifier {
       _profissionalId = profissional['id'];
       _nome = profissional['nome'];
       _chamadoAtivo = null; // Login fresco, sem chamado ativo
-      
+
       notifyListeners();
     } on DioException catch (e) {
-      throw Exception(e.response?.data['erro'] ?? 'Erro de ligação ao servidor');
+      throw Exception(
+        e.response?.data['erro'] ?? 'Erro de ligação ao servidor',
+      );
     }
   }
 
