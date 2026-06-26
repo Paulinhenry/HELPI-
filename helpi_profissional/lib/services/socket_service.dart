@@ -65,6 +65,24 @@ class SocketService {
     });
   }
 
+  /// Emite a localização atual do profissional para o cliente via WebSocket.
+  /// O backend retransmite apenas para a sala do cliente (cliente:${clienteId}).
+  void emitirLocalizacao({
+    required String profissionalId,
+    required String clienteId,
+    required double latitude,
+    required double longitude,
+  }) {
+    if (_socket != null && _socket!.connected) {
+      _socket!.emit('atualizar_localizacao', {
+        'profissional_id': profissionalId,
+        'cliente_id': clienteId,
+        'latitude': latitude,
+        'longitude': longitude,
+      });
+    }
+  }
+
   void desligarRadar() {
     if (_socket != null) {
       _socket!.disconnect();
