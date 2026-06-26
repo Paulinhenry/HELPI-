@@ -220,6 +220,20 @@ const aceitarChamado = async (req, res, next) => {
             });
         }
 
+        // WebSocket: notifica TODOS os outros profissionais que este chamado já foi aceite
+        // Isto faz o popup de "NOVO SERVIÇO" desaparecer nos telemóveis dos que perderam
+        const profissionaisConectados = req.app.get('profissionaisConectados');
+        if (io && profissionaisConectados) {
+            for (const [profId, socketId] of profissionaisConectados.entries()) {
+                if (profId !== profissional_id) {
+                    io.to(socketId).emit('chamado_expirado', {
+                        chamado_id: id,
+                        motivo: 'aceite_por_outro'
+                    });
+                }
+            }
+        }
+
         logger.info(`[CHAMADO] ACEITE: chamado ${id} aceite pelo profissional ${profissional_id} | status: a_caminho | cliente: ${atualizacao.rows[0].cliente_id}`);
 
         res.json({
@@ -360,6 +374,37 @@ const finalizarChamado = async (req, res, next) => {
     }
 };
 
+// ─── VERIFICAR CHAMADO ATIVO (CRASH RECOVERY) ──────────────
+// Quando o profissional reabre a app (ex: bateria morreu), esta rota
+// diz-lhe se tem algum chamado em andamento para retomar.
+// Retorna o chamado ativo ou null.
+const verificarChamadoAtivo = async (req, res, next) => {
+    try {
+        const profissional_id = req.usuario.id;
+
+        const resultado = await pool.query(
+            `SELECT id, status, cliente_id, latitude_destino, longitude_destino,
+                    categoria_solicitada, problema_descricao
+             FROM chamados_express
+             WHERE profissional_id = $1
+               AND status IN ('a_caminho', 'em_servico')
+             ORDER BY aceite_em DESC
+             LIMIT 1`,
+            [profissional_id]
+        );
+
+        if (resultado.rows.length === 0) {
+            return res.json({ chamado_ativo: null });
+        }
+
+        logger.info(`[CRASH_RECOVERY] Profissional ${profissional_id} tem chamado ativo: ${resultado.rows[0].id} (status: ${resultado.rows[0].status})`);
+
+        return res.json({ chamado_ativo: resultado.rows[0] });
+    } catch (erro) {
+        next(erro);
+    }
+};
+
 // ─── LISTAR CHAMADOS DO CLIENTE (NOVO) ──────────────────────
 // Paginação cursor-based para escala
 const listarMeusChamados = async (req, res, next) => {
@@ -434,4 +479,4 @@ const cancelarChamado = async (req, res) => {
     }
 };
 
-module.exports = { criarChamado, aceitarChamado, registrarChegada, finalizarChamado, listarMeusChamados, cancelarChamado };
+module.exports = { criarChamado, aceitarChamado, registrarChegada, finalizarChamado, verificarChamadoAtivo, listarMeusChamados, cancelarChamado };
