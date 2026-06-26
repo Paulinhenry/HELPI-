@@ -117,7 +117,8 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
         _mostrarAlertaDeTrabalho,
         onPagamentoConfirmado: (dados) {
           if (!mounted) return;
-          final valor = double.tryParse(dados['valor']?.toString() ?? '0') ?? 0.0;
+          final rawValor = dados['valor_cobrado'] ?? dados['valor'] ?? '0';
+          final valor = double.tryParse(rawValor.toString()) ?? 0.0;
           Navigator.push(
             context,
             MaterialPageRoute(

@@ -88,7 +88,7 @@ class CheckoutScreen extends StatelessWidget {
                     ),
                     _buildRow(
                       'Valor do Serviço', 
-                      data['valor_cobrado'] != null ? 'R\$ ${data['valor_cobrado']}' : '---'
+                      (data['valor_cobrado'] ?? data['valor']) != null ? 'R\$ ${data['valor_cobrado'] ?? data['valor']}' : '---'
                     ),
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 16),
@@ -102,7 +102,7 @@ class CheckoutScreen extends StatelessWidget {
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          data['valor_cobrado'] != null ? 'R\$ ${data['valor_cobrado']}' : '---',
+                          (data['valor_cobrado'] ?? data['valor']) != null ? 'R\$ ${data['valor_cobrado'] ?? data['valor']}' : '---',
                           style: TextStyle(
                             fontSize: 18, 
                             fontWeight: FontWeight.bold,
@@ -129,10 +129,14 @@ class CheckoutScreen extends StatelessWidget {
                     elevation: 0,
                   ),
                   onPressed: () {
+                    final chamadosProvider = context.read<ChamadosProvider>();
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => PagamentoNativoScreen(data: data),
+                        builder: (_) => ChangeNotifierProvider.value(
+                          value: chamadosProvider,
+                          child: PagamentoNativoScreen(data: data),
+                        ),
                       ),
                     );
                   },

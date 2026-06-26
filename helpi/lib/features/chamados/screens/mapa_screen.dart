@@ -92,7 +92,10 @@ class _MapaScreenViewState extends State<MapaScreenView> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => CheckoutScreen(data: data),
+            builder: (context) => ChangeNotifierProvider.value(
+              value: chamadosProvider,
+              child: CheckoutScreen(data: data),
+            ),
           ),
         );
       };
@@ -530,7 +533,7 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                               : Text(
                                   provider.estimativaMin != null 
                                     ? 'R\$ ${provider.estimativaMin} - R\$ ${provider.estimativaMax}'
-                                    : 'A calcular...',
+                                    : 'Estimativa indisponível',
                                   style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                                 ),
                           ],
