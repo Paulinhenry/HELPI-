@@ -57,10 +57,14 @@ class AuthProvider with ChangeNotifier {
       );
 
       final token = response.data['access_token'];
+      final refreshToken = response.data['refresh_token'];
       final profissional = response.data['usuario']; // A API retorna 'usuario'
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('access_token', token);
+      if (refreshToken != null) {
+        await prefs.setString('refresh_token', refreshToken);
+      }
       await prefs.setString('usuarioId', profissional['id']);
       await prefs.setString('nome', profissional['nome']);
 
