@@ -35,6 +35,7 @@ class ChamadosProvider with ChangeNotifier {
   Function()? onTimeout;
   Function(Map<String, dynamic>)? onSuccess;
   Function(String)? onError;
+  Function(Map<String, dynamic>)? onServicoFinalizado;
 
   Position? get posicaoAtual => _posicaoAtual;
   bool get carregando => _carregando;
@@ -67,7 +68,37 @@ class ChamadosProvider with ChangeNotifier {
     await Future.wait([
       _buscarLocalizacao(),
       _carregarCategorias(),
+      _verificarChamadoAtivo(), // Crash Recovery
     ]);
+  }
+
+  Future<void> _verificarChamadoAtivo() async {
+    try {
+      final ativo = await _chamadosService.verificarChamadoAtivo();
+      if (ativo != null) {
+        _idChamadoAtual = ativo['id'];
+        _categoriaSelecionada = ativo['categoria_solicitada'];
+        _descricaoProblema = ativo['problema_descricao'];
+
+        final status = ativo['status'];
+        if (status == 'procurando_profissional') {
+          _isProcurando = true;
+          // Iniciar timer visual (dummy) e conectar sockets se necessário
+          SocketService().ouvirAtualizacoesChamado(_onAtualizacaoChamado);
+        } else if (status == 'a_caminho' || status == 'em_servico') {
+          _isProcurando = false;
+          _isProfissionalACaminho = true;
+          _nomeProfissional = ativo['profissional_nome'] ?? 'O Profissional';
+          _distanciaProfissional = 'Em andamento';
+          
+          SocketService().ouvirAtualizacoesChamado(_onAtualizacaoChamado);
+          SocketService().ouvirLocalizacaoProfissional(_onLocalizacaoProfissional);
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('[CrashRecovery] Erro ao recuperar chamado: $e');
+    }
   }
 
   Future<void> _carregarCategorias() async {
@@ -217,9 +248,12 @@ class ChamadosProvider with ChangeNotifier {
       notifyListeners();
       
       onSuccess?.call(data);
-    } else if ((data['status_novo'] == 'cancelado' || data['status_novo'] == 'finalizado') && data['chamado_id'] == _idChamadoAtual) {
-      // Se finalizar ou for cancelado, resetamos tudo
+    } else if (data['status_novo'] == 'cancelado' && data['chamado_id'] == _idChamadoAtual) {
+      // Se for cancelado, resetamos tudo
       resetarEstado();
+    } else if (data['status_novo'] == 'finalizado' && data['chamado_id'] == _idChamadoAtual) {
+      // Quando finalizado, vamos transitar para a Caixa Registadora (Checkout)
+      onServicoFinalizado?.call(data);
     }
   }
 

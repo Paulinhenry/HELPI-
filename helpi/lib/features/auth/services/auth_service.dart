@@ -44,4 +44,47 @@ class AuthService {
       throw Exception('Ocorreu um erro inesperado.');
     }
   }
+
+  /// Regista um novo cliente na API.
+  Future<void> registrarCliente({
+    required String nome,
+    required String cpf,
+    required String email,
+    required String senha,
+    required String telefone,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post(
+        '/clientes',
+        data: {
+          'nome': nome,
+          'cpf': cpf,
+          'email': email,
+          'senha': senha,
+          'telefone': telefone,
+        },
+      );
+
+      if (response.statusCode != 201) {
+        throw Exception('Não foi possível registrar o cliente.');
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 400) {
+        throw Exception(e.response?.data['erro'] ?? 'Dados inválidos.');
+      }
+      if (e.response?.statusCode == 409) {
+        throw Exception(e.response?.data['erro'] ?? 'E-mail ou CPF já cadastrado.');
+      }
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        throw Exception('O servidor demorou demasiado a responder.');
+      }
+      if (e.type == DioExceptionType.connectionError) {
+        throw Exception('Não foi possível ligar ao servidor. Verifique a sua internet.');
+      }
+      throw Exception('Erro de ligação ao servidor. Tente novamente.');
+    } catch (e) {
+      throw Exception('Ocorreu um erro inesperado.');
+    }
+  }
 }
