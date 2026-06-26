@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../core/services/socket_service.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/map_style.dart';
 import '../providers/chamados_provider.dart';
 import '../../pagamentos/screens/checkout_screen.dart';
 
@@ -48,6 +49,7 @@ class _MapaScreenViewState extends State<MapaScreenView> {
           context: context,
           isDismissible: false,
           enableDrag: false,
+          backgroundColor: const Color(0xFF161A22),
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
           ),
@@ -61,6 +63,7 @@ class _MapaScreenViewState extends State<MapaScreenView> {
           context: context,
           isDismissible: false,
           enableDrag: false,
+          backgroundColor: const Color(0xFF161A22),
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
           ),
@@ -145,14 +148,14 @@ class _MapaScreenViewState extends State<MapaScreenView> {
       markers.add(Marker(
         markerId: const MarkerId('cliente'),
         position: LatLng(provider.posicaoAtual!.latitude, provider.posicaoAtual!.longitude),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
       ));
     }
     if (provider.isProfissionalACaminho && provider.posicaoProfissional != null) {
       markers.add(Marker(
         markerId: const MarkerId('profissional'),
         position: LatLng(provider.posicaoProfissional!.latitude, provider.posicaoProfissional!.longitude),
-        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
       ));
     }
     return markers;
@@ -181,28 +184,33 @@ class _MapaScreenViewState extends State<MapaScreenView> {
     final provider = context.watch<ChamadosProvider>();
 
     return Scaffold(
+      backgroundColor: const Color(0xFF0A0A0A),
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         title: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Colors.white.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)],
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: const Text(
             'Helpi',
-            style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryColor),
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
           ),
         ),
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 16),
-            decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            ),
             child: IconButton(
-              icon: const Icon(Icons.logout, color: AppColors.primaryColor),
+              icon: const Icon(Icons.logout, color: Colors.white),
               onPressed: () => context.read<AuthProvider>().logout(),
             ),
           )
@@ -216,6 +224,7 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                   children: [
                     GoogleMap(
                       onMapCreated: _onMapCreated,
+                      style: MapStyle.darkStyle,
                       initialCameraPosition: CameraPosition(
                         target: LatLng(provider.posicaoAtual!.latitude, provider.posicaoAtual!.longitude),
                         zoom: 16.5,
@@ -252,9 +261,10 @@ class _MapaScreenViewState extends State<MapaScreenView> {
   Widget _construirPainelRastreamento(ChamadosProvider provider) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF161A22),
         borderRadius: const BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 20, offset: const Offset(0, -5))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 20, offset: const Offset(0, -5))],
+        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
       ),
       child: SafeArea(
         child: Padding(
@@ -266,7 +276,7 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                 child: Container(
                   width: 50,
                   height: 5,
-                  decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(10)),
                 ),
               ),
               const SizedBox(height: 24),
@@ -276,11 +286,11 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: AppColors.background,
+                      color: const Color(0xFF1B55D6).withValues(alpha: 0.1),
                       shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.primaryColor, width: 2),
+                      border: Border.all(color: const Color(0xFF1B55D6), width: 2),
                     ),
-                    child: const Icon(Icons.person, color: AppColors.primaryColor, size: 35),
+                    child: const Icon(Icons.person, color: Color(0xFF1B55D6), size: 35),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -289,16 +299,16 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                       children: [
                         Text(
                           provider.nomeProfissional,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.white),
                         ),
                         const SizedBox(height: 4),
                         Row(
                           children: [
-                            const Icon(Icons.location_on, color: AppColors.primaryColor, size: 16),
+                            const Icon(Icons.location_on, color: Color(0xFF1B55D6), size: 16),
                             const SizedBox(width: 4),
                             Text(
                               provider.distanciaProfissional,
-                              style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
+                              style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w600),
                             ),
                           ],
                         ),
@@ -312,10 +322,10 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                 width: double.infinity,
                 height: 56,
                 child: OutlinedButton.icon(
-                  icon: const Icon(Icons.phone, color: AppColors.primaryColor),
-                  label: const Text('Contactar Profissional', style: TextStyle(color: AppColors.primaryColor, fontSize: 16, fontWeight: FontWeight.bold)),
+                  icon: const Icon(Icons.phone, color: Color(0xFF1B55D6)),
+                  label: const Text('Contactar Profissional', style: TextStyle(color: Color(0xFF1B55D6), fontSize: 16, fontWeight: FontWeight.bold)),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.primaryColor, width: 2),
+                    side: const BorderSide(color: Color(0xFF1B55D6), width: 2),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   onPressed: () {
@@ -335,15 +345,16 @@ class _MapaScreenViewState extends State<MapaScreenView> {
     
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF161A22),
         borderRadius: const BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
+            color: Colors.black.withValues(alpha: 0.5),
             blurRadius: 20,
             offset: const Offset(0, -5),
           )
         ],
+        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
       ),
       child: SafeArea(
         child: SingleChildScrollView(
@@ -380,7 +391,7 @@ class _MapaScreenViewState extends State<MapaScreenView> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF4F6F9),
+                  color: Colors.white.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Row(
@@ -391,10 +402,10 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text("Sua localização", style: TextStyle(fontSize: 12, color: Colors.black54)),
+                          const Text("Sua localização", style: TextStyle(fontSize: 12, color: Colors.white54)),
                           Text(
                             provider.enderecoAtual,
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -409,7 +420,7 @@ class _MapaScreenViewState extends State<MapaScreenView> {
               // Categories Title
               const Text(
                 'Serviços disponíveis',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
               ),
               const SizedBox(height: 16),
 
@@ -417,7 +428,7 @@ class _MapaScreenViewState extends State<MapaScreenView> {
               SizedBox(
                 height: 90,
                 child: provider.categorias.isEmpty
-                    ? const Center(child: Text("Nenhuma categoria disponível"))
+                    ? const Center(child: Text("Nenhuma categoria disponível", style: TextStyle(color: Colors.white54)))
                     : ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: provider.categorias.length,
@@ -432,7 +443,7 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                               margin: const EdgeInsets.only(right: 12),
                               width: 80,
                               decoration: BoxDecoration(
-                                color: isSelected ? Colors.white : const Color(0xFFF4F6F9),
+                                color: isSelected ? mockupBlue.withValues(alpha: 0.2) : Colors.white.withValues(alpha: 0.05),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: isSelected ? mockupBlue : Colors.transparent,
@@ -444,7 +455,7 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                                 children: [
                                   Icon(
                                     _getIconData(cat['icone']),
-                                    color: isSelected ? Colors.black87 : Colors.black54,
+                                    color: isSelected ? Colors.white : Colors.white54,
                                     size: 28,
                                   ),
                                   const SizedBox(height: 8),
@@ -453,7 +464,7 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                      color: isSelected ? Colors.black87 : Colors.black54,
+                                      color: isSelected ? Colors.white : Colors.white54,
                                     ),
                                   ),
                                 ],
@@ -468,11 +479,26 @@ class _MapaScreenViewState extends State<MapaScreenView> {
               // Description Field
               TextField(
                 controller: _descricaoController,
-                style: const TextStyle(fontSize: 14),
+                style: const TextStyle(fontSize: 14, color: Colors.white),
                 decoration: InputDecoration(
                   labelText: 'Qual o problema?',
+                  labelStyle: const TextStyle(color: Colors.white54),
                   hintText: 'Descreva a emergência brevemente',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                  hintStyle: const TextStyle(color: Colors.white30),
+                  filled: true,
+                  fillColor: Colors.white.withValues(alpha: 0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: mockupBlue, width: 2),
+                  ),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 ),
                 onChanged: (val) => provider.setDescricao(val),
@@ -485,13 +511,13 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: mockupBlue,
-                    disabledBackgroundColor: Colors.grey[300],
+                    disabledBackgroundColor: Colors.white.withValues(alpha: 0.1),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     elevation: 0,
                   ),
                   icon: Icon(
                     Icons.search,
-                    color: provider.categoriaSelecionada == null ? Colors.grey[500] : Colors.white,
+                    color: provider.categoriaSelecionada == null ? Colors.white30 : Colors.white,
                   ),
                   label: Text(
                     'ENCONTRAR PROFISSIONAL',
@@ -499,7 +525,7 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
                       letterSpacing: 1.0,
-                      color: provider.categoriaSelecionada == null ? Colors.grey[500] : Colors.white,
+                      color: provider.categoriaSelecionada == null ? Colors.white30 : Colors.white,
                     ),
                   ),
                   onPressed: provider.categoriaSelecionada == null
@@ -518,9 +544,10 @@ class _MapaScreenViewState extends State<MapaScreenView> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF161A22),
         borderRadius: const BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 20, offset: const Offset(0, -5))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 20, offset: const Offset(0, -5))],
+        border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.05))),
       ),
       child: SafeArea(
         child: Padding(
@@ -536,14 +563,14 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                     width: 90,
                     child: CircularProgressIndicator(
                       value: provider.segundosRestantes / 90,
-                      color: AppColors.primaryColor,
-                      backgroundColor: Colors.grey[200],
+                      color: const Color(0xFF1B55D6),
+                      backgroundColor: Colors.white.withValues(alpha: 0.1),
                       strokeWidth: 6,
                     ),
                   ),
                   Text(
                     _formatarTempo(provider.segundosRestantes),
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primaryColor),
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                 ],
               ),
@@ -551,7 +578,7 @@ class _MapaScreenViewState extends State<MapaScreenView> {
               Text(
                 'Procurando especialista em\n${provider.categoriaSelecionada}...',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
               ),
               const SizedBox(height: 32),
               SizedBox(
@@ -575,25 +602,28 @@ class _MapaScreenViewState extends State<MapaScreenView> {
 
   Widget _construirPainelNaoEncontrado(ChamadosProvider provider) {
     return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF161A22),
+      ),
       padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.red[50], shape: BoxShape.circle),
-            child: const Icon(Icons.person_search_rounded, color: AppColors.error, size: 40),
+            decoration: BoxDecoration(color: Colors.redAccent.withValues(alpha: 0.1), shape: BoxShape.circle),
+            child: const Icon(Icons.person_search_rounded, color: Colors.redAccent, size: 40),
           ),
           const SizedBox(height: 24),
           const Text(
             'Nenhum profissional disponível',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 8),
           const Text(
             'Analisamos o raio de cobertura, mas todos os nossos especialistas estão ocupados ou fora da área no momento.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: Colors.grey),
+            style: TextStyle(fontSize: 14, color: Colors.white70),
           ),
           const SizedBox(height: 32),
           SizedBox(
@@ -601,7 +631,7 @@ class _MapaScreenViewState extends State<MapaScreenView> {
             height: 54,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryColor,
+                backgroundColor: const Color(0xFF1B55D6),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               onPressed: () {
@@ -618,26 +648,29 @@ class _MapaScreenViewState extends State<MapaScreenView> {
 
   Widget _construirPainelSucesso(ChamadosProvider provider, {required String nome, required String distancia}) {
     return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFF161A22),
+      ),
       padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.green[50], shape: BoxShape.circle),
-            child: const Icon(Icons.check_circle_rounded, color: Colors.green, size: 40),
+            decoration: BoxDecoration(color: Colors.greenAccent.withValues(alpha: 0.1), shape: BoxShape.circle),
+            child: const Icon(Icons.check_circle_rounded, color: Colors.greenAccent, size: 40),
           ),
           const SizedBox(height: 24),
           Text(
             '$nome está a caminho!',
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
             'Suspiro de alívio! O profissional aceitou o pedido e encontra-se a $distancia de distância. Por favor, aguarde no local.',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 14, color: Colors.grey),
+            style: const TextStyle(fontSize: 14, color: Colors.white70),
           ),
           const SizedBox(height: 32),
           SizedBox(
@@ -645,7 +678,7 @@ class _MapaScreenViewState extends State<MapaScreenView> {
             height: 54,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: Colors.greenAccent[700],
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
               onPressed: () {

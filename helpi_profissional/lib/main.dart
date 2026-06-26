@@ -102,7 +102,7 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
     setState(() {
       _isOnline = !_isOnline;
       if (_isOnline) {
-        _pulseController.repeat(reverse: true);
+        _pulseController.repeat();
       } else {
         _pulseController.stop();
         _pulseController.reset();
@@ -378,33 +378,33 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
                   return Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Outer glow ring
+                      // Efeito Radar (Sonar Pulse) com 3 anéis
                       if (_isOnline)
-                        Container(
-                          width: 280 + (_pulseController.value * 40),
-                          height: 280 + (_pulseController.value * 40),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: activeGreen.withValues(alpha: 0.2 - (_pulseController.value * 0.2)),
-                              width: 2,
+                        ...List.generate(3, (index) {
+                          // Atraso de tempo para cada anel criar o efeito de ondas
+                          final delay = index * 0.33;
+                          var progress = _pulseController.value - delay;
+                          if (progress < 0) progress += 1.0;
+                          
+                          // Opacidade diminui à medida que o raio aumenta
+                          final opacity = (1.0 - progress).clamp(0.0, 1.0);
+                          
+                          return Opacity(
+                            opacity: opacity,
+                            child: Container(
+                              width: 200 + (progress * 180), // Expande de 200 até 380
+                              height: 200 + (progress * 180),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: activeGreen.withValues(alpha: 0.15),
+                                border: Border.all(
+                                  color: activeGreen,
+                                  width: 2,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      // Inner glow ring
-                      if (_isOnline)
-                        Container(
-                          width: 230 + (_pulseController.value * 30),
-                          height: 230 + (_pulseController.value * 30),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: activeGreen.withValues(alpha: 0.1 - (_pulseController.value * 0.1)),
-                            border: Border.all(
-                              color: activeGreen.withValues(alpha: 0.4 - (_pulseController.value * 0.4)),
-                              width: 2,
-                            ),
-                          ),
-                        ),
+                          );
+                        }),
                       // Core Button
                       Container(
                         width: 200,
