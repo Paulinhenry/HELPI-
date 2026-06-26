@@ -151,6 +151,9 @@ router.post('/', authCliente, validarCriacaoChamado, chamadosController.criarCha
 // IMPORTANTE: Deve ficar ANTES das rotas com :id para o Express não confundir 'em-andamento' com um UUID
 router.get('/em-andamento', authProfissional, chamadosController.verificarChamadoAtivo);
 
+// --- CRASH RECOVERY CLIENTE: Verifica se o cliente tem chamado ativo ---
+router.get('/meu-ativo', authCliente, chamadosController.verificarChamadoAtivoCliente);
+
 // --- NOVA ROTA DE CANCELAMENTO AQUI ---
 router.patch('/:id/cancelar', authCliente, chamadosController.cancelarChamado);
 

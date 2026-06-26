@@ -356,7 +356,7 @@ const finalizarChamado = async (req, res, next) => {
             io.to(`cliente:${atualizacao.rows[0].cliente_id}`).emit('atualizacao_chamado', {
                 chamado_id: id,
                 status_novo: 'finalizado',
-                mensagem: "Serviço concluído! Por favor, avalie o profissional."
+                mensagem: "Serviço finalizado com sucesso!"
             });
         }
 
@@ -398,6 +398,36 @@ const verificarChamadoAtivo = async (req, res, next) => {
         }
 
         logger.info(`[CRASH_RECOVERY] Profissional ${profissional_id} tem chamado ativo: ${resultado.rows[0].id} (status: ${resultado.rows[0].status})`);
+
+        return res.json({ chamado_ativo: resultado.rows[0] });
+    } catch (erro) {
+        next(erro);
+    }
+};
+
+// ─── CRASH RECOVERY CLIENTE ─────────────────────────────────
+// Retorna o chamado ativo do cliente ou null.
+const verificarChamadoAtivoCliente = async (req, res, next) => {
+    try {
+        const cliente_id = req.usuario.id;
+
+        const resultado = await pool.query(
+            `SELECT c.id, c.status, c.categoria_solicitada, c.problema_descricao,
+                    c.profissional_id, p.nome as profissional_nome
+             FROM chamados_express c
+             LEFT JOIN profissionais p ON c.profissional_id = p.id
+             WHERE c.cliente_id = $1
+               AND c.status IN ('procurando_profissional', 'a_caminho', 'em_servico')
+             ORDER BY c.criado_em DESC
+             LIMIT 1`,
+            [cliente_id]
+        );
+
+        if (resultado.rows.length === 0) {
+            return res.json({ chamado_ativo: null });
+        }
+
+        logger.info(`[CRASH_RECOVERY] Cliente ${cliente_id} tem chamado ativo: ${resultado.rows[0].id} (status: ${resultado.rows[0].status})`);
 
         return res.json({ chamado_ativo: resultado.rows[0] });
     } catch (erro) {
@@ -479,4 +509,4 @@ const cancelarChamado = async (req, res) => {
     }
 };
 
-module.exports = { criarChamado, aceitarChamado, registrarChegada, finalizarChamado, verificarChamadoAtivo, listarMeusChamados, cancelarChamado };
+module.exports = { criarChamado, aceitarChamado, registrarChegada, finalizarChamado, verificarChamadoAtivo, verificarChamadoAtivoCliente, listarMeusChamados, cancelarChamado };

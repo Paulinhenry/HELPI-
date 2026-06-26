@@ -6,6 +6,7 @@ import '../../../core/services/socket_service.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../providers/chamados_provider.dart';
+import '../../pagamentos/screens/checkout_screen.dart';
 
 class MapaScreen extends StatelessWidget {
   const MapaScreen({super.key});
@@ -75,6 +76,21 @@ class _MapaScreenViewState extends State<MapaScreenView> {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(erro), backgroundColor: AppColors.error),
+        );
+      };
+
+      chamadosProvider.onServicoFinalizado = (data) {
+        if (!mounted) return;
+        
+        // Esconder a modal de tracking (se estiver aberta)
+        Navigator.popUntil(context, (route) => route.isFirst);
+
+        // Abrir a nova tela de checkout em ecrã inteiro
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CheckoutScreen(data: data),
+          ),
         );
       };
 

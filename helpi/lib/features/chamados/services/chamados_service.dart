@@ -55,4 +55,18 @@ class ChamadosService {
       throw Exception('Erro inesperado: $e');
     }
   }
+
+  /// CRASH RECOVERY: Verifica se o cliente tem um chamado em andamento
+  Future<Map<String, dynamic>?> verificarChamadoAtivo() async {
+    try {
+      final response = await _apiClient.dio.get('/chamados/meu-ativo');
+      final chamadoAtivo = response.data['chamado_ativo'];
+      if (chamadoAtivo != null) {
+        return Map<String, dynamic>.from(chamadoAtivo);
+      }
+      return null;
+    } on DioException {
+      return null;
+    }
+  }
 }

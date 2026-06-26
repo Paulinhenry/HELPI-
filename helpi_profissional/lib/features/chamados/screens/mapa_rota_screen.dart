@@ -61,6 +61,7 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
   bool _carregandoRota = true;
   bool _registrandoChegada = false;
   bool _chegou = false;
+  bool _finalizandoServico = false;
 
   // Timer para atualizar GPS
   Timer? _gpsTimer;
@@ -280,11 +281,6 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
             duration: Duration(seconds: 3),
           ),
         );
-
-        // Volta para o Radar após 2 segundos
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) Navigator.pop(context);
-        });
       }
     } catch (e) {
       if (mounted) {
@@ -292,6 +288,41 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Finaliza o serviço e retorna ao radar
+  Future<void> _finalizarServico() async {
+    setState(() => _finalizandoServico = true);
+
+    try {
+      await _chamadoService.finalizarChamado(widget.chamadoId);
+
+      if (mounted) {
+        setState(() => _finalizandoServico = false);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🎉 Serviço finalizado! Excelente trabalho!'),
+            backgroundColor: Color(0xFF448AFF),
+            duration: Duration(seconds: 3),
+          ),
+        );
+
+        // Limpar chamado ativo e voltar
+        context.read<AuthProvider>().limparChamadoAtivo();
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _finalizandoServico = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao finalizar: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -596,18 +627,18 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
 
                           const SizedBox(width: 12),
 
-                          // Botão "CHEGUEI!"
+                          // Botão "CHEGUEI!" ou "FINALIZAR SERVIÇO"
                           Expanded(
                             flex: 2,
                             child: SizedBox(
                               height: 56,
                               child: ElevatedButton.icon(
                                 onPressed:
-                                    (_registrandoChegada || _chegou)
+                                    (_registrandoChegada || _finalizandoServico)
                                         ? null
-                                        : _registrarChegada,
+                                        : (_chegou ? _finalizarServico : _registrarChegada),
                                 icon:
-                                    _registrandoChegada
+                                    (_registrandoChegada || _finalizandoServico)
                                         ? const SizedBox(
                                           width: 20,
                                           height: 20,
@@ -623,7 +654,7 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
                                           size: 22,
                                         ),
                                 label: Text(
-                                  _chegou ? 'CHEGADA REGISTRADA' : 'CHEGUEI!',
+                                  _chegou ? 'FINALIZAR SERVIÇO' : 'CHEGUEI!',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 1.0,
@@ -633,7 +664,7 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor:
                                       _chegou
-                                          ? const Color(0xFF2E7D32)
+                                          ? const Color(0xFF448AFF)
                                           : const Color(0xFF00C853),
                                   foregroundColor: Colors.white,
                                   disabledBackgroundColor: const Color(

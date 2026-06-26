@@ -41,6 +41,17 @@ class ChamadoService {
     }
   }
 
+  /// Finaliza o serviço prestado.
+  Future<Map<String, dynamic>> finalizarChamado(String chamadoId) async {
+    try {
+      final response = await _dio.put('/chamados/$chamadoId/finalizar');
+      return Map<String, dynamic>.from(response.data['chamado']);
+    } on DioException catch (e) {
+      final mensagem = e.response?.data['erro'] ?? 'Erro ao finalizar serviço';
+      throw Exception(mensagem);
+    }
+  }
+
   /// CRASH RECOVERY: Verifica se o profissional tem um chamado em andamento.
   /// Chamado logo no arranque da app (checkLoginStatus).
   /// Retorna os dados do chamado ativo ou null se não houver nenhum.
