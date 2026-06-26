@@ -56,6 +56,7 @@ class HelpiProfissionalApp extends StatelessWidget {
                 longitudeDestino: (c['longitude_destino'] as num).toDouble(),
                 categoria: c['categoria_solicitada'] ?? '',
                 descricao: c['problema_descricao'] ?? '',
+                clienteId: c['cliente_id']?.toString(),
               );
             }
             return RadarScreen(profissionalId: auth.profissionalId!);
@@ -185,6 +186,7 @@ class _RadarScreenState extends State<RadarScreen> {
                       longitudeDestino: (chamado['longitude_destino'] as num).toDouble(),
                       categoria: chamado['categoria_solicitada'] ?? dados['categoria'] ?? '',
                       descricao: chamado['problema_descricao'] ?? dados['descricao'] ?? '',
+                      clienteId: chamado['cliente_id']?.toString(),
                     ),
                   ),
                 );

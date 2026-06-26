@@ -5,8 +5,11 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
 import '../../../core/services/location_service.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../../../services/chamado_service.dart';
+import '../../../services/socket_service.dart';
 
 /// Tela de Mapa que mostra a rota do profissional até a casa do cliente.
 /// Exibe:
@@ -22,6 +25,7 @@ class MapaRotaScreen extends StatefulWidget {
   final double longitudeDestino;
   final String categoria;
   final String descricao;
+  final String? clienteId; // Necessário para emitir localização em tempo real
 
   const MapaRotaScreen({
     super.key,
@@ -30,6 +34,7 @@ class MapaRotaScreen extends StatefulWidget {
     required this.longitudeDestino,
     required this.categoria,
     required this.descricao,
+    this.clienteId,
   });
 
   @override
@@ -39,6 +44,7 @@ class MapaRotaScreen extends StatefulWidget {
 class _MapaRotaScreenState extends State<MapaRotaScreen>
     with TickerProviderStateMixin {
   final MapController _mapController = MapController();
+  final SocketService _socketService = SocketService();
   final ChamadoService _chamadoService = ChamadoService();
 
   // Posição atual do profissional
@@ -97,6 +103,20 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
         setState(() {
           _posicaoAtual = LatLng(position.latitude, position.longitude);
         });
+
+        // CORE LOOP: Emite a localização em tempo real para o cliente via WebSocket
+        // O backend retransmite apenas para a sala do cliente específico
+        if (widget.clienteId != null) {
+          final profissionalId = context.read<AuthProvider>().profissionalId;
+          if (profissionalId != null) {
+            _socketService.emitirLocalizacao(
+              profissionalId: profissionalId,
+              clienteId: widget.clienteId!,
+              latitude: position.latitude,
+              longitude: position.longitude,
+            );
+          }
+        }
       }
     } catch (e) {
       // Fallback para São Paulo em ambiente de testes
