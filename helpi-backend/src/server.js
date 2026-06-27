@@ -155,5 +155,7 @@ app.set('profissionaisConectados', profissionaisConectados);
 
 // 4. Arrancamos o servidor
 server.listen(PORT, () => {
-    logger.info(`[SERVER] INICIALIZADO: servidor HTTP + WebSocket a correr na porta ${PORT} (env: ${process.env.NODE_ENV || 'development'})`);
+    const isProd = process.env.NODE_ENV === 'production';
+    const serverUrl = isProd ? 'https://helpi-api.onrender.com' : `http://localhost:${PORT}`;
+    logger.info(`[SERVER] INICIALIZADO: servidor HTTP + WebSocket rodando em ${serverUrl} (env: ${process.env.NODE_ENV || 'development'})`);
 });
