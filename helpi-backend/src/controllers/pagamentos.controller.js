@@ -146,6 +146,8 @@ const webhookMercadoPago = async (req, res) => {
                 if (updateRes.rows.length > 0) {
                     const chamado_id = updateRes.rows[0].chamado_id;
                     await pool.query(`UPDATE chamados_express SET pagamento_status = 'pago' WHERE id = $1`, [chamado_id]);
+                    
+                    logger.info(`[FINANÇAS] 💰 Dinheiro na conta! Chamado #${chamado_id} pago com sucesso.`);
 
                     // Buscar profissional ID
                     const chamadoRes = await pool.query(`SELECT profissional_id FROM chamados_express WHERE id = $1`, [chamado_id]);
@@ -163,6 +165,8 @@ const webhookMercadoPago = async (req, res) => {
                         }
                     }
                 }
+            } else {
+                logger.info(`[WEBHOOK] Pagamento ${paymentId} atualizado para status: ${mpPayment.status}`);
             }
         }
         return res.status(200).send('OK');
