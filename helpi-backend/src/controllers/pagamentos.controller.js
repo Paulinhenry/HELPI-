@@ -121,17 +121,26 @@ const processarPagamento = async (req, res, next) => {
 
 const webhookMercadoPago = async (req, res) => {
     try {
-        const { id, type } = req.body;
+        let paymentId = null;
         
-        if (type === 'payment' && id) {
-            const mpPayment = await payment.get({ id });
+        // O Mercado Pago envia webhooks e IPNs em formatos diferentes
+        if (req.body?.type === 'payment' && req.body?.data?.id) {
+            paymentId = req.body.data.id;
+        } else if (req.body?.action?.startsWith('payment.') && req.body?.data?.id) {
+            paymentId = req.body.data.id;
+        } else if (req.query?.topic === 'payment' && req.query?.id) {
+            paymentId = req.query.id;
+        }
+
+        if (paymentId) {
+            const mpPayment = await payment.get({ id: paymentId });
             
             if (mpPayment.status === 'approved') {
                 // Atualizar BD
                 const updateRes = await pool.query(
                     `UPDATE pagamentos SET status = 'approved', pago_em = CURRENT_TIMESTAMP 
                      WHERE mp_payment_id = $1 RETURNING chamado_id, valor_profissional`,
-                    [id.toString()]
+                    [paymentId.toString()]
                 );
                 
                 if (updateRes.rows.length > 0) {
