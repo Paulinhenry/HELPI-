@@ -50,23 +50,24 @@ const processarPagamento = async (req, res, next) => {
         const valorPlataforma = valorTotal * 0.10; // 10% HELPI
         const valorProfissional = valorTotal * 0.90; // 90% Profissional
 
-        // 2. Criar Payment no Mercado Pago (Transparente)
+        const paymentBody = {
+            transaction_amount: valorTotal,
+            description: description || `Serviço Helpi - Chamado ${chamado_id.split('-')[0]}`,
+            payment_method_id: payment_method_id,
+            payer: {
+                email: payer.email,
+                identification: payer.identification
+            }
+        };
+
+        if (token) paymentBody.token = token;
+        if (installments) paymentBody.installments = installments;
+        if (issuer_id) paymentBody.issuer_id = issuer_id;
+
         const requestOptions = {
-            body: {
-                transaction_amount: valorTotal,
-                token: token,
-                description: description || `Serviço Helpi - Chamado ${chamado_id.split('-')[0]}`,
-                installments: installments || 1,
-                payment_method_id: payment_method_id,
-                issuer_id: issuer_id,
-                payer: {
-                    email: payer.email,
-                    identification: payer.identification
-                },
-                // Marketplace Application Fee (Split)
-                // application_fee: valorPlataforma // Removido para MVP se não tivermos setup avançado de marketplace MP
-                // Nota: Para usar application_fee nativo do MP, o access_token usado tem de ser o da conta do Profissional, ou a plataforma recolhe tudo e distribui.
-                // Como MVP de backend, faremos a plataforma receber tudo.
+            body: paymentBody,
+            requestOptions: {
+                idempotencyKey: crypto.randomUUID()
             }
         };
 
