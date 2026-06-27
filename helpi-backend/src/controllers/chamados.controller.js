@@ -45,7 +45,7 @@ const criarChamado = async (req, res, next) => {
         const categoriaMapeada = MAPA_CATEGORIAS[catSoli] || catSoli;
 
         // --- INTEGRAÇÃO COM MOTOR DE PRECIFICAÇÃO ---
-        const estimativa = analisarProblema(categoriaMapeada, problema_descricao);
+        const estimativa = analisarProblema(categoria_solicitada, problema_descricao);
 
         // ── POSTIGS: Busca espacial com índice GiST (O(log n)) ──
         // ST_DWithin usa o índice GIST automaticamente (vs Haversine que faz full table scan)
@@ -117,9 +117,10 @@ const criarChamado = async (req, res, next) => {
                         categoria: categoria_solicitada,
                         descricao: problema_descricao,
                         distancia_metros: Math.round(profissional.distancia_km * 1000), 
-                        valor_sugerido: estimativa.preco_sugerido, 
-                        valor_estimado_min: estimativa.preco_minimo,
-                        valor_estimado_max: estimativa.preco_maximo
+                        // Mostra o valor COM DESCONTO de 10% da plataforma para o profissional
+                        valor_sugerido: estimativa.preco_sugerido * 0.90, 
+                        valor_estimado_min: estimativa.preco_minimo * 0.90,
+                        valor_estimado_max: estimativa.preco_maximo * 0.90
                         // 🔒 Segurança: Não enviamos a morada exata nem as coordenadas 
                         // do cliente até o profissional aceitar o serviço!
                     });
