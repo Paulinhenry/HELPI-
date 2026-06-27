@@ -18,8 +18,12 @@ const options = {
         },
         servers: [
             {
-                url: `http://localhost:${PORT}`,
-                description: 'Servidor Local',
+                url: process.env.NODE_ENV === 'production' 
+                    ? 'https://helpi-api.onrender.com' 
+                    : `http://localhost:${PORT}`,
+                description: process.env.NODE_ENV === 'production' 
+                    ? 'Servidor de Produção (Render)' 
+                    : 'Servidor Local',
             },
         ],
         // Esquema de segurança JWT para os endpoints protegidos
