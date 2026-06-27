@@ -132,6 +132,14 @@ const processarPagamento = async (req, res, next) => {
         
     } catch (erro) {
         logger.error(`[PAGAMENTO] Erro: ${erro.message}`);
+        
+        // Tratamento específico para erro do Mercado Pago (Credenciais de Produção não autorizadas/validadas)
+        if (erro.message && erro.message.includes('Unauthorized use of live credentials')) {
+            return res.status(400).json({ 
+                erro: 'A sua conta do Mercado Pago ainda não está autorizada para receber pagamentos reais (produção). Utilize as credenciais de Teste (TEST-...) ou valide a sua conta no painel do Mercado Pago.' 
+            });
+        }
+        
         next(erro);
     }
 };
