@@ -60,15 +60,18 @@ const processarPagamento = async (req, res, next) => {
         }
         const clienteData = clienteQuery.rows[0];
 
+        // Se o CPF for nulo na base (por registros antigos), usamos um default ou omitimos
+        const cpfLimpo = clienteData.cpf ? clienteData.cpf.replace(/\D/g, '') : '00000000000';
+
         const paymentBody = {
             transaction_amount: valorTotal,
             description: description || `Serviço Helpi - Chamado ${chamado_id.split('-')[0]}`,
             payment_method_id: payment_method_id,
             payer: {
-                email: clienteData.email,
+                email: clienteData.email || payer.email, // Fallback se não tiver
                 identification: {
                     type: 'CPF',
-                    number: clienteData.cpf.replace(/\D/g, '') // Somente números
+                    number: cpfLimpo.length === 11 ? cpfLimpo : '00000000000' // Mercado Pago exige 11 digitos
                 }
             }
         };
@@ -153,7 +156,7 @@ const webhookMercadoPago = async (req, res) => {
                 // Atualizar BD
                 const updateRes = await pool.query(
                     `UPDATE pagamentos SET status = 'approved', pago_em = CURRENT_TIMESTAMP 
-                     WHERE mp_payment_id = $1 RETURNING chamado_id, valor_profissional`,
+                     WHERE mp_payment_id = $1 RETURNING chamado_id, valor_profissional, valor_total`,
                     [paymentId.toString()]
                 );
                 
