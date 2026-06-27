@@ -50,13 +50,26 @@ const processarPagamento = async (req, res, next) => {
         const valorPlataforma = valorTotal * 0.10; // 10% HELPI
         const valorProfissional = valorTotal * 0.90; // 90% Profissional
 
+        const clienteQuery = await pool.query(
+            `SELECT email, cpf FROM clientes WHERE id = $1`,
+            [cliente_id]
+        );
+        
+        if (clienteQuery.rows.length === 0) {
+            return res.status(404).json({ erro: 'Cliente não encontrado.' });
+        }
+        const clienteData = clienteQuery.rows[0];
+
         const paymentBody = {
             transaction_amount: valorTotal,
             description: description || `Serviço Helpi - Chamado ${chamado_id.split('-')[0]}`,
             payment_method_id: payment_method_id,
             payer: {
-                email: payer.email,
-                identification: payer.identification
+                email: clienteData.email,
+                identification: {
+                    type: 'CPF',
+                    number: clienteData.cpf.replace(/\D/g, '') // Somente números
+                }
             }
         };
 
