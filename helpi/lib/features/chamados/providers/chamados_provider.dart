@@ -115,6 +115,10 @@ class ChamadosProvider with ChangeNotifier {
     ]);
   }
 
+  Future<void> sincronizarEstadoServidor() async {
+    await _verificarChamadoAtivo();
+  }
+
   Future<void> _verificarChamadoAtivo() async {
     try {
       final ativo = await _chamadosService.verificarChamadoAtivo();

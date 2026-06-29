@@ -66,7 +66,7 @@ const processarPagamento = async (req, res, next) => {
         const paymentBody = {
             transaction_amount: valorTotal,
             description: description || `Serviço Helpi - Chamado ${chamado_id.split('-')[0]}`,
-            payment_method_id: 'pix', // 🔴 CTO Rule: Garantir sempre 'pix' na veia
+            payment_method_id: payment_method_id || 'pix', // 🔓 CTO Rule removed to support credit cards
             payer: {
                 email: clienteData.email || payer.email, // Fallback se não tiver
                 identification: {
