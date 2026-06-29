@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -392,7 +394,7 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
 
         // Limpar chamado ativo e voltar
         context.read<AuthProvider>().limparChamadoAtivo();
-        Navigator.pop(context);
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
@@ -442,6 +444,17 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
                     'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
                 subdomains: const ['a', 'b', 'c', 'd'],
                 userAgentPackageName: 'com.helpi.profissional',
+                retinaMode: RetinaMode.isHighDensity(context),
+                tileProvider: CancellableNetworkTileProvider(),
+                tileBuilder: (context, tileWidget, tile) {
+                  return ColorFiltered(
+                    colorFilter: const ColorFilter.mode(
+                      Color(0xFF0F1A2C), // Dark blue tint for Helpi visual identity
+                      BlendMode.modulate,
+                    ),
+                    child: tileWidget,
+                  );
+                },
               ),
 
               // Polyline da rota
@@ -525,75 +538,80 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
             top: 0,
             left: 0,
             right: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFF0A0A0A),
-                    const Color(0xFF0A0A0A).withValues(alpha: 0.8),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-              child: SafeArea(
-                bottom: false,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+            child: ClipRRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        const Color(0xFF0A0A0A).withValues(alpha: 0.7),
+                        const Color(0xFF0A0A0A).withValues(alpha: 0.4),
+                        Colors.transparent,
+                      ],
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      // Botão voltar
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.1),
-                          ),
-                        ),
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back_ios_new,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                        ),
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
                       ),
-                      const SizedBox(width: 12),
-                      // Info do chamado
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.categoria,
-                              style: const TextStyle(
-                                color: Color(0xFF448AFF),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 1.2,
+                      child: Row(
+                        children: [
+                          // Botão voltar
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.1),
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              widget.descricao,
-                              style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.9),
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.arrow_back_ios_new,
+                                color: Colors.white,
+                                size: 20,
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              onPressed: () => Navigator.pop(context),
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Info do chamado
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.categoria,
+                                  style: const TextStyle(
+                                    color: Color(0xFF448AFF),
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  widget.descricao,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -607,158 +625,163 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
             bottom: 0,
             left: 0,
             right: 0,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    const Color(0xFF0A0A0A),
-                    const Color(0xFF0A0A0A).withValues(alpha: 0.95),
-                    const Color(0xFF0A0A0A).withValues(alpha: 0.7),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.4, 0.7, 1.0],
-                ),
-              ),
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 40, 20, 16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Card de ETA
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.1),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            // Distância
-                            _buildEtaItem(
-                              icon: Icons.straighten_rounded,
-                              label: 'DISTÂNCIA',
-                              value: _carregandoRota ? '...' : _distanciaTexto,
-                            ),
-                            Container(
-                              width: 1,
-                              height: 40,
-                              color: Colors.white.withValues(alpha: 0.1),
-                            ),
-                            // Tempo
-                            _buildEtaItem(
-                              icon: Icons.access_time_rounded,
-                              label: 'TEMPO EST.',
-                              value: _carregandoRota ? '...' : _tempoTexto,
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Botões de ação
-                      Row(
+            child: ClipRRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        const Color(0xFF0A0A0A).withValues(alpha: 0.9),
+                        const Color(0xFF0A0A0A).withValues(alpha: 0.7),
+                        const Color(0xFF0A0A0A).withValues(alpha: 0.3),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.4, 0.7, 1.0],
+                    ),
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 40, 20, 16),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Botão "Abrir GPS"
-                          Expanded(
-                            child: SizedBox(
-                              height: 56,
-                              child: OutlinedButton.icon(
-                                onPressed: _abrirNavegacaoExterna,
-                                icon: const Icon(
-                                  Icons.navigation_rounded,
-                                  size: 22,
-                                ),
-                                label: const Text(
-                                  'ABRIR GPS',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 1.0,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: const Color(0xFF448AFF),
-                                  side: const BorderSide(
-                                    color: Color(0xFF448AFF),
-                                    width: 1.5,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
+                          // Card de ETA
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.1),
                               ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                // Distância
+                                _buildEtaItem(
+                                  icon: Icons.straighten_rounded,
+                                  label: 'DISTÂNCIA',
+                                  value: _carregandoRota ? '...' : _distanciaTexto,
+                                ),
+                                Container(
+                                  width: 1,
+                                  height: 40,
+                                  color: Colors.white.withValues(alpha: 0.1),
+                                ),
+                                // Tempo
+                                _buildEtaItem(
+                                  icon: Icons.access_time_rounded,
+                                  label: 'TEMPO EST.',
+                                  value: _carregandoRota ? '...' : _tempoTexto,
+                                ),
+                              ],
                             ),
                           ),
 
-                          const SizedBox(width: 12),
+                          const SizedBox(height: 16),
 
-                          // Botão "CHEGUEI!" ou "FINALIZAR SERVIÇO"
-                          Expanded(
-                            flex: 2,
-                            child: SizedBox(
-                              height: 56,
-                              child: ElevatedButton.icon(
-                                onPressed:
-                                    (_registrandoChegada || _finalizandoServico)
-                                        ? null
-                                        : (_chegou ? _abrirDialogoPreco : _registrarChegada),
-                                icon:
-                                    (_registrandoChegada || _finalizandoServico)
-                                        ? const SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2.5,
-                                            color: Colors.white,
-                                          ),
-                                        )
-                                        : Icon(
-                                          _chegou
-                                              ? Icons.check_circle_rounded
-                                              : Icons.location_on_rounded,
-                                          size: 22,
-                                        ),
-                                label: Text(
-                                  _chegou ? 'FINALIZAR SERVIÇO' : 'CHEGUEI!',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 1.0,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      _chegou
-                                          ? const Color(0xFF448AFF)
-                                          : const Color(0xFF00C853),
-                                  foregroundColor: Colors.white,
-                                  disabledBackgroundColor: const Color(
-                                    0xFF2E7D32,
-                                  ),
-                                  disabledForegroundColor: Colors.white70,
-                                  elevation: 0,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
+                          // Botões de ação
+                          Row(
+                            children: [
+                              // Botão "Abrir GPS"
+                              Expanded(
+                                child: SizedBox(
+                                  height: 56,
+                                  child: OutlinedButton.icon(
+                                    onPressed: _abrirNavegacaoExterna,
+                                    icon: const Icon(
+                                      Icons.navigation_rounded,
+                                      size: 22,
+                                    ),
+                                    label: const Text(
+                                      'ABRIR GPS',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 1.0,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: const Color(0xFF448AFF),
+                                      side: const BorderSide(
+                                        color: Color(0xFF448AFF),
+                                        width: 1.5,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
+
+                              const SizedBox(width: 12),
+
+                              // Botão "CHEGUEI!" ou "FINALIZAR SERVIÇO"
+                              Expanded(
+                                flex: 2,
+                                child: SizedBox(
+                                  height: 56,
+                                  child: ElevatedButton.icon(
+                                    onPressed:
+                                        (_registrandoChegada || _finalizandoServico)
+                                            ? null
+                                            : (_chegou ? _abrirDialogoPreco : _registrarChegada),
+                                    icon:
+                                        (_registrandoChegada || _finalizandoServico)
+                                            ? const SizedBox(
+                                              width: 20,
+                                              height: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2.5,
+                                                color: Colors.white,
+                                              ),
+                                            )
+                                            : Icon(
+                                              _chegou
+                                                  ? Icons.check_circle_rounded
+                                                  : Icons.location_on_rounded,
+                                              size: 22,
+                                            ),
+                                    label: Text(
+                                      _chegou ? 'FINALIZAR SERVIÇO' : 'CHEGUEI!',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        letterSpacing: 1.0,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor:
+                                          _chegou
+                                              ? const Color(0xFF448AFF)
+                                              : const Color(0xFF00C853),
+                                      foregroundColor: Colors.white,
+                                      disabledBackgroundColor: const Color(
+                                        0xFF2E7D32,
+                                      ),
+                                      disabledForegroundColor: Colors.white70,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -808,12 +831,19 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          child: Text(
+            value,
+            key: ValueKey<String>(value),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ),
       ],

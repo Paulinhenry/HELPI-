@@ -79,14 +79,16 @@ class RadarScreen extends StatefulWidget {
   State<RadarScreen> createState() => _RadarScreenState();
 }
 
-class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStateMixin {
+class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final SocketService _socketService = SocketService();
   bool _isOnline = false;
+  int _chamadosHoje = 0;
   late AnimationController _pulseController;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -95,8 +97,24 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _pulseController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (mounted) {
+        if (_isOnline) {
+          _socketService.ligarRadar(
+            widget.profissionalId,
+            _mostrarAlertaDeTrabalho,
+            onPagamentoConfirmado: (dados) {},
+          );
+        }
+      }
+    }
   }
 
   void _toggleModoTrabalho() {
@@ -230,7 +248,7 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
 
-                Navigator.push(
+                final finished = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => MapaRotaScreen(
@@ -245,6 +263,10 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
                     ),
                   ),
                 );
+
+                if (finished == true && mounted) {
+                  setState(() => _chamadosHoje++);
+                }
               } on ChamadoJaAceitoException catch (e) {
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -357,9 +379,9 @@ class _RadarScreenState extends State<RadarScreen> with SingleTickerProviderStat
                           const SizedBox(width: 12),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            children: const [
-                              Text('Chamados hoje', style: TextStyle(color: Colors.white54, fontSize: 10)),
-                              Text('0', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                            children: [
+                              const Text('Chamados hoje', style: TextStyle(color: Colors.white54, fontSize: 10)),
+                              Text('$_chamadosHoje', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ],

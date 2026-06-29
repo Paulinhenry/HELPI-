@@ -3,7 +3,7 @@ class MapStyle {
 [
   {
     "elementType": "geometry",
-    "stylers": [{"color": "#212121"}]
+    "stylers": [{"color": "#161A22"}]
   },
   {
     "elementType": "labels.icon",
@@ -15,7 +15,7 @@ class MapStyle {
   },
   {
     "elementType": "labels.text.stroke",
-    "stylers": [{"color": "#212121"}]
+    "stylers": [{"color": "#161A22"}]
   },
   {
     "featureType": "administrative",
@@ -40,7 +40,7 @@ class MapStyle {
   {
     "featureType": "poi.park",
     "elementType": "geometry",
-    "stylers": [{"color": "#181818"}]
+    "stylers": [{"color": "#18202A"}]
   },
   {
     "featureType": "poi.park",
@@ -55,7 +55,7 @@ class MapStyle {
   {
     "featureType": "road",
     "elementType": "geometry.fill",
-    "stylers": [{"color": "#2c2c2c"}]
+    "stylers": [{"color": "#202736"}]
   },
   {
     "featureType": "road",
@@ -65,17 +65,17 @@ class MapStyle {
   {
     "featureType": "road.arterial",
     "elementType": "geometry",
-    "stylers": [{"color": "#373737"}]
+    "stylers": [{"color": "#283244"}]
   },
   {
     "featureType": "road.highway",
     "elementType": "geometry",
-    "stylers": [{"color": "#3c3c3c"}]
+    "stylers": [{"color": "#33415C"}]
   },
   {
     "featureType": "road.highway.controlled_access",
     "elementType": "geometry",
-    "stylers": [{"color": "#4e4e4e"}]
+    "stylers": [{"color": "#4A5B7F"}]
   },
   {
     "featureType": "road.local",
@@ -90,7 +90,7 @@ class MapStyle {
   {
     "featureType": "water",
     "elementType": "geometry",
-    "stylers": [{"color": "#000000"}]
+    "stylers": [{"color": "#0D1525"}]
   },
   {
     "featureType": "water",

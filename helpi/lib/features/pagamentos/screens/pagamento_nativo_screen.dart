@@ -5,6 +5,7 @@ import 'dart:convert';
 import '../../../core/theme/app_colors.dart';
 import '../services/pagamento_service.dart';
 import '../../chamados/providers/chamados_provider.dart';
+import 'pagamento_cartao_screen.dart';
 
 class PagamentoNativoScreen extends StatefulWidget {
   final Map<String, dynamic> data;
@@ -106,10 +107,17 @@ class _PagamentoNativoScreenState extends State<PagamentoNativoScreen> {
                   icon: Icons.credit_card,
                   title: 'Cartão de Crédito',
                   subtitle: 'Em breve',
-                  color: Colors.grey,
+                  color: AppColors.primaryColor,
                   onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Cartão de crédito estará disponível em breve.')),
+                    final chamadosProvider = context.read<ChamadosProvider>();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChangeNotifierProvider.value(
+                          value: chamadosProvider,
+                          child: PagamentoCartaoScreen(data: widget.data),
+                        ),
+                      ),
                     );
                   },
                 ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
-
+import 'package:lottie/lottie.dart' hide Marker;
 import '../../../core/services/socket_service.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_colors.dart';
@@ -28,13 +28,14 @@ class MapaScreenView extends StatefulWidget {
   State<MapaScreenView> createState() => _MapaScreenViewState();
 }
 
-class _MapaScreenViewState extends State<MapaScreenView> {
+class _MapaScreenViewState extends State<MapaScreenView> with WidgetsBindingObserver {
   GoogleMapController? mapController;
   final TextEditingController _descricaoController = TextEditingController(text: "Emergência urgente solicitada via Helpi App");
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     Future.microtask(() {
       if (!mounted) return;
       final authProvider = context.read<AuthProvider>();
@@ -105,6 +106,29 @@ class _MapaScreenViewState extends State<MapaScreenView> {
     });
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    mapController?.dispose();
+    _descricaoController.dispose();
+    SocketService().desconectar();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (mounted) {
+        final provider = context.read<ChamadosProvider>();
+        provider.sincronizarEstadoServidor();
+        final authProvider = context.read<AuthProvider>();
+        if (authProvider.userId != null) {
+          SocketService().conectar(authProvider.userId!);
+        }
+      }
+    }
+  }
+
   void _onProviderUpdate() {
     if (!mounted) return;
     final chamadosProvider = context.read<ChamadosProvider>();
@@ -113,13 +137,7 @@ class _MapaScreenViewState extends State<MapaScreenView> {
     }
   }
 
-  @override
-  void dispose() {
-    mapController?.dispose();
-    _descricaoController.dispose();
-    SocketService().desconectar();
-    super.dispose();
-  }
+
 
   void _onMapCreated(GoogleMapController controller) {
     mapController = controller;
@@ -241,17 +259,37 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                     provider.isProfissionalACaminho
                         ? Align(
                             alignment: Alignment.bottomCenter,
-                            child: _construirPainelRastreamento(provider),
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 500),
+                              transitionBuilder: (Widget child, Animation<double> animation) {
+                                return SlideTransition(
+                                  position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(animation),
+                                  child: child,
+                                );
+                              },
+                              child: _construirPainelRastreamento(provider),
+                            ),
                           )
                         : provider.isProcurando
                             ? Align(
                                 alignment: Alignment.bottomCenter,
-                                child: _construirPainelBuscando(provider),
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 500),
+                                  transitionBuilder: (Widget child, Animation<double> animation) {
+                                    return SlideTransition(
+                                      position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero).animate(animation),
+                                      child: child,
+                                    );
+                                  },
+                                  child: _construirPainelBuscando(provider),
+                                ),
                               )
                             : DraggableScrollableSheet(
                                 initialChildSize: 0.45,
                                 minChildSize: 0.15,
                                 maxChildSize: 0.75,
+                                snap: true,
+                                snapSizes: const [0.15, 0.45, 0.75],
                                 builder: (context, scrollController) {
                                   return _construirPainelSolicitacao(provider, scrollController);
                                 },
@@ -362,6 +400,7 @@ class _MapaScreenViewState extends State<MapaScreenView> {
       child: SafeArea(
         child: SingleChildScrollView(
           controller: scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -597,13 +636,17 @@ class _MapaScreenViewState extends State<MapaScreenView> {
                 alignment: Alignment.center,
                 children: [
                   SizedBox(
-                    height: 90,
-                    width: 90,
-                    child: CircularProgressIndicator(
-                      value: provider.segundosRestantes / 90,
-                      color: const Color(0xFF1B55D6),
-                      backgroundColor: Colors.white.withValues(alpha: 0.1),
-                      strokeWidth: 6,
+                    height: 120,
+                    width: 120,
+                    child: Lottie.network(
+                      'https://lottie.host/6d1cbf49-f53f-4e0a-9d62-67852c50587d/91oD2k9Vb4.json', // Radar pulse
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => CircularProgressIndicator(
+                        value: provider.segundosRestantes / 90,
+                        color: const Color(0xFF1B55D6),
+                        backgroundColor: Colors.white.withValues(alpha: 0.1),
+                        strokeWidth: 6,
+                      ),
                     ),
                   ),
                   Text(
