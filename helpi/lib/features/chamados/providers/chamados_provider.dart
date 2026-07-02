@@ -331,6 +331,7 @@ class ChamadosProvider with ChangeNotifier {
 
   @override
   void dispose() {
+    _debounceEstimativa?.cancel();
     _cooldownTimer?.cancel();
     super.dispose();
   }

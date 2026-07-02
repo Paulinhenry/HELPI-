@@ -31,6 +31,6 @@ describe("Testes do CRUD de Clientes (/api/clientes)", () => {
     });
 
     afterAll(async () => {
-        await pool.end();
+        // await pool.end(); // Removido para test:all funcionar
     });
 });

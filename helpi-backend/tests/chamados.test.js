@@ -131,7 +131,7 @@ describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
 
     // FIX: afterAll movido para o FINAL do describe (estava antes dos testes 5 e 6)
     afterAll(async () => {
-        await pool.end();
+        // await pool.end(); // Removido para test:all funcionar
     });
 });
 
