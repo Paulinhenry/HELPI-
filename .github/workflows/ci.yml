@@ -51,6 +51,10 @@ jobs:
         working-directory: ./helpi
         run: flutter pub get
         
+      - name: Criar ficheiro .env Dummy (Obrigatório para build)
+        working-directory: ./helpi
+        run: touch .env
+        
       - name: Executar Testes (Cliente)
         working-directory: ./helpi
         run: flutter test
