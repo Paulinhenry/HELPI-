@@ -1,0 +1,166 @@
+# =============================================================
+# HELPI - E2E: A Corrida Perfeita (Maestro Script)
+# Pilar 3 > End-to-End > O Teste do Investidor
+#
+# Este script simula o fluxo completo do marketplace:
+# 1. Cliente faz login
+# 2. Cliente pede um canalizador
+# 3. Profissional faz login (segundo emulador)
+# 4. Radar toca no profissional
+# 5. Profissional aceita
+# 6. Cliente recebe confirmação
+# 7. Profissional finaliza e cobra R$ 100
+# 8. Cliente recebe pop-up de pagamento
+#
+# REQUISITOS:
+# - Maestro instalado: curl -Ls https://get.maestro.mobile.dev | bash
+# - 2 emuladores Android rodando
+# - Backend local ativo (npm run dev)
+# - Apps Flutter compiladas e instaladas nos emuladores
+#
+# EXECUÇÃO:
+# Terminal 1 (Cliente):  maestro test corrida_perfeita_cliente.yaml
+# Terminal 2 (Pro):      maestro test corrida_perfeita_profissional.yaml
+#
+# NOTA: Maestro não suporta orquestrar 2 emuladores num único script.
+# Por isso, dividimos em 2 scripts que devem correr em paralelo.
+# =============================================================
+
+# ─────────────────────────────────────────────────────────────
+# SCRIPT 1: FLUXO DO CLIENTE (corrida_perfeita_cliente.yaml)
+# ─────────────────────────────────────────────────────────────
+appId: com.helpi.app
+name: "Corrida Perfeita — Cliente"
+tags:
+  - e2e
+  - corrida-perfeita
+  - cliente
+
+---
+
+# PASSO 1: Login como Cliente A
+- launchApp
+- assertVisible: "Login"
+
+# Preenche email
+- tapOn:
+    id: "email_field"
+- inputText: "cliente.teste@helpi.com"
+
+# Preenche senha
+- tapOn:
+    id: "senha_field"
+- inputText: "senha123"
+
+# Clica no botão Login
+- tapOn: "Entrar"
+
+# Espera o mapa carregar
+- waitForAnimationToEnd
+- assertVisible: "A procurar morada..."
+  # Ou qualquer elemento do MapaScreen que confirme que o login funcionou
+
+# PASSO 2: Pede um canalizador (Hidráulica)
+- tapOn: "Hidráulica"
+  # Seleciona a categoria
+
+# Descreve o problema
+- tapOn:
+    id: "descricao_field"
+- inputText: "Vazamento na cozinha, torneira pingando muito"
+
+# Clica no botão de solicitar profissional
+- tapOn: "CHAMAR PROFISSIONAL"
+
+# Espera o radar procurar
+- assertVisible: "Procurando"
+  # O cronómetro de 90 segundos deve aparecer
+
+# PASSO 5/6: Espera a confirmação (o Profissional vai aceitar no outro emulador)
+# Timeout de 30 segundos para o profissional aceitar
+- waitUntilVisible:
+    text: "aceitou"
+    timeout: 30000
+
+# Verifica que recebeu a confirmação
+- assertVisible: "a caminho"
+
+# PASSO 8: Espera o pop-up de pagamento (profissional finaliza no outro emulador)
+- waitUntilVisible:
+    text: "Serviço Concluído"
+    timeout: 60000
+
+# Verifica que o checkout apareceu com o valor correto
+- assertVisible: "R$ 100"
+- assertVisible: "PAGAR"
+
+# ✅ Se chegou aqui, a corrida do Cliente está VERDE!
+
+---
+
+# ─────────────────────────────────────────────────────────────
+# SCRIPT 2: FLUXO DO PROFISSIONAL (corrida_perfeita_profissional.yaml)
+# ─────────────────────────────────────────────────────────────
+# NOTA: Este deve correr num SEGUNDO terminal apontando para o 
+# segundo emulador: maestro test --device emulator-5556 corrida_perfeita_profissional.yaml
+# ─────────────────────────────────────────────────────────────
+
+# appId: com.helpi.profissional
+# name: "Corrida Perfeita — Profissional"
+# tags:
+#   - e2e
+#   - corrida-perfeita
+#   - profissional
+# 
+# ---
+# 
+# # PASSO 3: Login como Profissional B
+# - launchApp
+# - assertVisible: "Login"
+# 
+# - tapOn:
+#     id: "email_field"
+# - inputText: "profissional.teste@helpi.com"
+# 
+# - tapOn:
+#     id: "senha_field"  
+# - inputText: "senha123"
+# 
+# - tapOn: "Entrar"
+# 
+# # Espera o dashboard do profissional carregar
+# - waitForAnimationToEnd
+# 
+# # Fica Online
+# - tapOn: "Ficar Online"
+# - assertVisible: "Online"
+# 
+# # PASSO 4: Espera o radar tocar (o Cliente vai pedir no outro emulador)
+# - waitUntilVisible:
+#     text: "NOVO SERVIÇO"
+#     timeout: 30000
+# 
+# # PASSO 5: Aceitar o chamado
+# - tapOn: "ACEITAR"
+# 
+# # Verifica que ficou a_caminho
+# - assertVisible: "A caminho"
+# 
+# # Simula chegada ao local
+# - tapOn: "CHEGUEI"
+# - assertVisible: "Em serviço"
+# 
+# # PASSO 7: Finaliza e cobra R$ 100
+# - tapOn: "FINALIZAR SERVIÇO"
+# 
+# # Preenche valor cobrado
+# - tapOn:
+#     id: "valor_cobrado_field"
+# - inputText: "100"
+# 
+# - tapOn: "CONFIRMAR"
+# 
+# # Verifica que finalizou com sucesso
+# - assertVisible: "Serviço finalizado"
+# 
+# # ✅ Se chegou aqui, a corrida do Profissional está VERDE!

@@ -348,6 +348,11 @@ const finalizarChamado = async (req, res, next) => {
             return res.status(403).json({ erro: "Você não tem permissão para finalizar este pedido." });
         }
 
+        if (verChamado.rows[0].status !== 'em_servico') {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ erro: "O pedido precisa estar 'em_servico' para ser finalizado." });
+        }
+
         if (!valor_cobrado || isNaN(valor_cobrado)) {
             await client.query('ROLLBACK');
             return res.status(400).json({ erro: "É necessário informar o valor cobrado pelo serviço." });

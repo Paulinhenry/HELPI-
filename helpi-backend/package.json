@@ -7,6 +7,9 @@
     "start": "pm2-runtime start ecosystem.config.js",
     "dev": "npx nodemon src/server.js",
     "test": "jest",
+    "test:unit": "jest --testPathPatterns=\"tests/(inteligencia|auth)\" --verbose",
+    "test:integration": "jest --testPathPatterns=\"tests/(operacoes|financeiro|radar)\" --verbose --runInBand",
+    "test:all": "jest --verbose --runInBand --coverage",
     "migrate": "knex migrate:latest",
     "migrate:make": "knex migrate:make",
     "docker:up": "docker-compose up -d",
@@ -37,6 +40,7 @@
   },
   "devDependencies": {
     "jest": "^30.4.2",
-    "supertest": "^7.2.2"
+    "supertest": "^7.2.2",
+    "socket.io-client": "^4.8.3"
   }
 }

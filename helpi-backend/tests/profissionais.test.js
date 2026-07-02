@@ -59,6 +59,6 @@ describe('Testes de Registo de Profissionais (/api/profissionais)', () => {
 
     afterAll(async () => {
         // Encerra a ligação à base de dados para o terminal não ficar bloqueado
-        await pool.end();
+        // await pool.end(); // Removido para test:all funcionar
     });
 });
