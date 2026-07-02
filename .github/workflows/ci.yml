@@ -32,6 +32,9 @@ jobs:
           JWT_SECRET: key_super_secreta_para_github_actions
           PORT: 3000
           NODE_ENV: test
+          MP_ACCESS_TOKEN: dummy-access-token-github-actions
+          MP_PUBLIC_KEY: dummy-public-key
+          MP_WEBHOOK_SECRET: dummy-webhook-secret
         # Rodamos apenas testes unitários porque os de integração exigem base de dados e não há migrações no projeto
         run: npm run test:unit
 
