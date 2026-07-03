@@ -52,7 +52,12 @@ const authCliente = require('../middlewares/authCliente');
  *         description: Este serviço já foi avaliado
  */
 
-// SEGURANÇA: Agora requer autenticação de cliente
-router.post('/', authCliente, avaliacoesController.criarAvaliacao);
+const authProfissional = require('../middlewares/authProfissional');
+
+// Rota para o CLIENTE avaliar o PROFISSIONAL
+router.post('/cliente', authCliente, avaliacoesController.clienteAvaliaProfissional);
+
+// Rota para o PROFISSIONAL avaliar o CLIENTE
+router.post('/profissional', authProfissional, avaliacoesController.profissionalAvaliaCliente);
 
 module.exports = router;

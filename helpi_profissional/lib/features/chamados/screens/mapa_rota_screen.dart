@@ -12,6 +12,7 @@ import '../../../core/services/location_service.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../services/chamado_service.dart';
 import '../../../services/socket_service.dart';
+import '../../avaliacoes/screens/avaliacao_screen.dart';
 
 /// Tela de Mapa que mostra a rota do profissional até a casa do cliente.
 /// Exibe:
@@ -392,9 +393,18 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
           ),
         );
 
-        // Limpar chamado ativo e voltar
+        // Limpar chamado ativo e navegar para a Avaliação
         context.read<AuthProvider>().limparChamadoAtivo();
-        Navigator.pop(context, true);
+        
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AvaliacaoScreen(
+              chamadoId: widget.chamadoId,
+              nomeCliente: 'o cliente', // Pode ser expandido futuramente
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {

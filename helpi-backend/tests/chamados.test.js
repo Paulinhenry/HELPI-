@@ -98,7 +98,7 @@ describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
     // --- PASSO 5: CLIENTE AVALIA O SERVIÇO ---
     it('5. Cliente avalia o serviço e a média do profissional é atualizada', async () => {
         const res = await request(app)
-            .post('/api/avaliacoes')
+            .post('/api/avaliacoes/cliente')
             .set('Authorization', `Bearer ${tokenCliente}`)
             .send({
                 chamado_id: chamadoId,
@@ -117,7 +117,7 @@ describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
     // --- PASSO 6: TENTA AVALIAR DUAS VEZES (SEGURANÇA) ---
     it('6. Deve bloquear tentativa de avaliar o mesmo serviço duas vezes', async () => {
         const res = await request(app)
-            .post('/api/avaliacoes')
+            .post('/api/avaliacoes/cliente')
             .set('Authorization', `Bearer ${tokenCliente}`)
             .send({
                 chamado_id: chamadoId,
@@ -126,7 +126,7 @@ describe('Testes do Ciclo de Vida do Motor On-Demand (/api/chamados)', () => {
             });
 
         expect(res.statusCode).toEqual(409); // 409 significa Conflito
-        expect(res.body.erro).toContain('já foi avaliado');
+        expect(res.body.erro).toContain('Você já avaliou');
     });
 
     // FIX: afterAll movido para o FINAL do describe (estava antes dos testes 5 e 6)

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../../core/network/app_client.dart';
 
 class AuthService {
@@ -41,7 +42,7 @@ class AuthService {
       }
       throw Exception('Erro de ligação ao servidor. Tente novamente.');
     } catch (e) {
-      print('Erro inesperado no loginCliente: $e');
+      debugPrint('Erro inesperado no loginCliente: $e');
       throw Exception('Ocorreu um erro inesperado.');
     }
   }
