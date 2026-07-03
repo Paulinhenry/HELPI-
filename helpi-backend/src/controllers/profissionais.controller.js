@@ -20,7 +20,7 @@ const listarProfissionais = async (req, res, next) => {
         const limitNum = Math.min(parseInt(limit, 10) || 20, 50); // Max 50 por página
 
         let query = `
-            SELECT id, nome, categoria, biografia, taxa_visita, avaliacao
+            SELECT id, nome, categoria, biografia, taxa_visita, nota_media as avaliacao
             FROM profissionais
             WHERE status = $1 AND deletado_em IS NULL
         `;
@@ -33,14 +33,14 @@ const listarProfissionais = async (req, res, next) => {
             paramIndex++;
         }
 
-        // Paginação com cursor composto (avaliacao + id) para evitar duplicatas
+        // Paginação com cursor composto (nota_media + id) para evitar duplicatas
         if (cursor && cursor_id) {
-            query += ` AND (avaliacao, id) < ($${paramIndex}, $${paramIndex + 1})`;
+            query += ` AND (nota_media, id) < ($${paramIndex}, $${paramIndex + 1})`;
             valores.push(cursor, cursor_id);
             paramIndex += 2;
         }
 
-        query += ` ORDER BY avaliacao DESC, id DESC LIMIT $${paramIndex}`;
+        query += ` ORDER BY nota_media DESC, id DESC LIMIT $${paramIndex}`;
         valores.push(limitNum + 1);
 
         const resultado = await pool.query(query, valores);
@@ -67,7 +67,7 @@ const verProfissional = async (req, res, next) => {
     try {
         const { id } = req.params;
         const resultado = await pool.query(
-            `SELECT id, nome, categoria, biografia, taxa_visita, avaliacao, criado_em
+            `SELECT id, nome, categoria, biografia, taxa_visita, nota_media as avaliacao, criado_em
              FROM profissionais
              WHERE id = $1 AND deletado_em IS NULL`,
             [id]

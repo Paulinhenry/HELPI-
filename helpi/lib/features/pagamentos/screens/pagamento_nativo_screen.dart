@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../services/pagamento_service.dart';
 import '../../chamados/providers/chamados_provider.dart';
 import 'pagamento_cartao_screen.dart';
+import '../../avaliacoes/screens/avaliacao_screen.dart';
 
 class PagamentoNativoScreen extends StatefulWidget {
   final Map<String, dynamic> data;
@@ -192,8 +193,13 @@ class _PagamentoNativoScreenState extends State<PagamentoNativoScreen> {
                         const SizedBox(height: 24),
                         ElevatedButton(
                           onPressed: () {
-                            context.read<ChamadosProvider>().resetarEstado();
-                            Navigator.of(context).popUntil((route) => route.isFirst);
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => AvaliacaoScreen(data: widget.data),
+                              ),
+                              (route) => false,
+                            );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primaryColor,

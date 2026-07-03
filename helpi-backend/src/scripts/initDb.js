@@ -54,7 +54,8 @@ const criarTabelas = async () => {
                 categoria VARCHAR(50) NOT NULL,
                 biografia TEXT, -- Para o profissional "vender" o seu trabalho
                 taxa_visita DECIMAL(10,2) DEFAULT 0.00, -- Ex: Valor cobrado apenas pela deslocação
-                avaliacao DECIMAL(3,2) DEFAULT 0.00,
+                nota_media DECIMAL(3,2) DEFAULT 0.00,
+                total_avaliacoes INTEGER DEFAULT 0,
                 status VARCHAR(20) DEFAULT 'pendente_aprovacao', -- Para aprovares quem entra
                 criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );

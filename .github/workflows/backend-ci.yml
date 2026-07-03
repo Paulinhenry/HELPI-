@@ -36,6 +36,7 @@ jobs:
       JWT_REFRESH_SECRET: refresh_secret_ci_test
       NODE_ENV: test
       PORT: 3000
+      MP_ACCESS_TOKEN: dummy_token_for_tests_ci
 
     defaults:
       run:
@@ -63,11 +64,12 @@ jobs:
         node src/scripts/initDb.js
         node src/scripts/initDbexpress.js
         node src/scripts/initDbavaliacoes.js
+        node src/scripts/atualizar_avaliacoes.js
         node src/scripts/upgradePostGIS.js
         node src/scripts/migrateSoftDeleteAndIndexes.js
 
     - name: Run tests
-      run: npm test
+      run: npm run test:all
 
   docker-build:
     needs: test

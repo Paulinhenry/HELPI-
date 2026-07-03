@@ -41,13 +41,13 @@ const executarMigration = async () => {
 
         console.log('✅ Colunas de soft-delete adicionadas!\n');
 
-        // ─── 2. CORRIGIR avaliacao DECIMAL(3,2) → DECIMAL(3,1) ──
-        console.log('🔧 A corrigir tipo da coluna avaliacao...');
+        // ─── 2. CORRIGIR nota_media DECIMAL(3,2) → DECIMAL(3,1) ──
+        console.log('🔧 A corrigir tipo da coluna nota_media...');
         await cliente.query(`
-            ALTER TABLE profissionais
-            ALTER COLUMN avaliacao TYPE DECIMAL(3,1);
+            ALTER TABLE profissionais 
+            ALTER COLUMN nota_media TYPE DECIMAL(3,2);
         `);
-        console.log('✅ Tipo de avaliacao corrigido (suporta até 9.9)!\n');
+        console.log('✅ Coluna nota_media corrigida!');
 
         // ─── 3. ÍNDICES DE PERFORMANCE ───────────────────────────
         console.log('⚡ A criar índices de performance...');
