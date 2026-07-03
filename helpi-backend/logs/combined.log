@@ -1492,3 +1492,37 @@
 {"level":"info","message":"Nova conexão estabelecida com o banco de dados.","timestamp":"2026-07-03T02:48:39.450Z"}
 {"level":"info","message":"Nova conexão estabelecida com o banco de dados.","timestamp":"2026-07-03T02:48:40.496Z"}
 {"level":"info","message":"Nova conexão estabelecida com o banco de dados.","timestamp":"2026-07-03T02:48:42.152Z"}
+{"level":"info","message":"Nova conexão estabelecida com o banco de dados.","timestamp":"2026-07-03T02:49:52.383Z"}
+{"level":"info","message":"Nova conexão estabelecida com o banco de dados.","timestamp":"2026-07-03T02:49:53.593Z"}
+{"level":"info","message":"Nova conexão estabelecida com o banco de dados.","timestamp":"2026-07-03T02:49:55.321Z"}
+{"level":"info","message":"Nova conexão estabelecida com o banco de dados.","timestamp":"2026-07-03T02:49:57.272Z"}
+{"level":"info","message":"Nova conexão estabelecida com o banco de dados.","timestamp":"2026-07-03T02:49:59.163Z"}
+{"level":"info","message":"Nova conexão estabelecida com o banco de dados.","timestamp":"2026-07-03T02:50:02.540Z"}
+{"level":"info","message":"Nova conexão estabelecida com o banco de dados.","timestamp":"2026-07-03T02:50:03.260Z"}
+{"level":"info","message":"Nova conexão estabelecida com o banco de dados.","timestamp":"2026-07-03T02:50:40.842Z"}
+{"level":"info","message":"[CHAMADO] CRIADO: chamado c3964332-9b29-4b32-91ab-0e291b197d42 por cliente 4c5e8dcc-ec1f-440d-81ea-c5201fec4a0b | categoria: Elétrica | profissionais_no_raio: 1 | notificados: 0","timestamp":"2026-07-03T02:50:41.370Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [03/Jul/2026:02:50:41 +0000] \"POST /api/chamados HTTP/1.1\" 201 319 \"-\" \"-\"","timestamp":"2026-07-03T02:50:41.378Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [03/Jul/2026:02:50:41 +0000] \"PUT /api/chamados/c3964332-9b29-4b32-91ab-0e291b197d42/chegada HTTP/1.1\" 403 62 \"-\" \"-\"","timestamp":"2026-07-03T02:50:41.489Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [03/Jul/2026:02:50:41 +0000] \"PUT /api/chamados/c3964332-9b29-4b32-91ab-0e291b197d42/finalizar HTTP/1.1\" 403 64 \"-\" \"-\"","timestamp":"2026-07-03T02:50:41.600Z"}
+{"level":"info","message":"[CHAMADO] ACEITE: chamado c3964332-9b29-4b32-91ab-0e291b197d42 aceite pelo profissional e79789f8-66a8-4897-8022-96403993d449 | status: a_caminho | cliente: 4c5e8dcc-ec1f-440d-81ea-c5201fec4a0b","timestamp":"2026-07-03T02:50:41.764Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [03/Jul/2026:02:50:41 +0000] \"PUT /api/chamados/c3964332-9b29-4b32-91ab-0e291b197d42/aceitar HTTP/1.1\" 200 435 \"-\" \"-\"","timestamp":"2026-07-03T02:50:41.767Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [03/Jul/2026:02:50:41 +0000] \"PUT /api/chamados/c3964332-9b29-4b32-91ab-0e291b197d42/finalizar HTTP/1.1\" 400 67 \"-\" \"-\"","timestamp":"2026-07-03T02:50:41.868Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [03/Jul/2026:02:50:41 +0000] \"PUT /api/chamados/c3964332-9b29-4b32-91ab-0e291b197d42/aceitar HTTP/1.1\" 400 86 \"-\" \"-\"","timestamp":"2026-07-03T02:50:41.970Z"}
+{"level":"info","message":"[CHAMADO] CHEGADA: profissional e79789f8-66a8-4897-8022-96403993d449 chegou ao local do chamado c3964332-9b29-4b32-91ab-0e291b197d42 | status: em_servico","timestamp":"2026-07-03T02:50:42.114Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [03/Jul/2026:02:50:42 +0000] \"PUT /api/chamados/c3964332-9b29-4b32-91ab-0e291b197d42/chegada HTTP/1.1\" 200 250 \"-\" \"-\"","timestamp":"2026-07-03T02:50:42.115Z"}
+{"level":"info","message":"[CHAMADO] FINALIZADO: chamado c3964332-9b29-4b32-91ab-0e291b197d42 finalizado pelo profissional e79789f8-66a8-4897-8022-96403993d449 | status: finalizado","timestamp":"2026-07-03T02:50:42.251Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [03/Jul/2026:02:50:42 +0000] \"PUT /api/chamados/c3964332-9b29-4b32-91ab-0e291b197d42/finalizar HTTP/1.1\" 200 418 \"-\" \"-\"","timestamp":"2026-07-03T02:50:42.253Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [03/Jul/2026:02:50:42 +0000] \"PUT /api/chamados/c3964332-9b29-4b32-91ab-0e291b197d42/aceitar HTTP/1.1\" 400 86 \"-\" \"-\"","timestamp":"2026-07-03T02:50:42.352Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [03/Jul/2026:02:50:42 +0000] \"PUT /api/chamados/c3964332-9b29-4b32-91ab-0e291b197d42/finalizar HTTP/1.1\" 400 67 \"-\" \"-\"","timestamp":"2026-07-03T02:50:42.470Z"}
+{"level":"info","message":"Nova conexão estabelecida com o banco de dados.","timestamp":"2026-07-03T02:50:44.630Z"}
+{"level":"info","message":"[CHAMADO] CRIADO: chamado 01afa5e4-d76a-4203-9569-c77b77fef0b4 por cliente ce125a66-bd49-4965-8e2c-7f1ae5f88f8f | categoria: Eletricista | profissionais_no_raio: 1 | notificados: 0","timestamp":"2026-07-03T02:50:45.220Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [03/Jul/2026:02:50:45 +0000] \"POST /api/chamados HTTP/1.1\" 201 318 \"-\" \"-\"","timestamp":"2026-07-03T02:50:45.222Z"}
+{"level":"info","message":"[CHAMADO] ACEITE: chamado 01afa5e4-d76a-4203-9569-c77b77fef0b4 aceite pelo profissional ddc2ad49-f644-4c67-b363-165656f3b7a9 | status: a_caminho | cliente: ce125a66-bd49-4965-8e2c-7f1ae5f88f8f","timestamp":"2026-07-03T02:50:45.387Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [03/Jul/2026:02:50:45 +0000] \"PUT /api/chamados/01afa5e4-d76a-4203-9569-c77b77fef0b4/aceitar HTTP/1.1\" 200 428 \"-\" \"-\"","timestamp":"2026-07-03T02:50:45.388Z"}
+{"level":"info","message":"[CHAMADO] CHEGADA: profissional ddc2ad49-f644-4c67-b363-165656f3b7a9 chegou ao local do chamado 01afa5e4-d76a-4203-9569-c77b77fef0b4 | status: em_servico","timestamp":"2026-07-03T02:50:45.519Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [03/Jul/2026:02:50:45 +0000] \"PUT /api/chamados/01afa5e4-d76a-4203-9569-c77b77fef0b4/chegada HTTP/1.1\" 200 250 \"-\" \"-\"","timestamp":"2026-07-03T02:50:45.520Z"}
+{"level":"info","message":"[CHAMADO] FINALIZADO: chamado 01afa5e4-d76a-4203-9569-c77b77fef0b4 finalizado pelo profissional ddc2ad49-f644-4c67-b363-165656f3b7a9 | status: finalizado","timestamp":"2026-07-03T02:50:45.695Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [03/Jul/2026:02:50:45 +0000] \"PUT /api/chamados/01afa5e4-d76a-4203-9569-c77b77fef0b4/finalizar HTTP/1.1\" 200 410 \"-\" \"-\"","timestamp":"2026-07-03T02:50:45.697Z"}
+{"level":"info","message":"[TRUST_ENGINE] Cliente avaliou Profissional | chamado 01afa5e4-d76a-4203-9569-c77b77fef0b4 | nota: 5/5 | prof_status: aprovado","timestamp":"2026-07-03T02:50:45.865Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [03/Jul/2026:02:50:45 +0000] \"POST /api/avaliacoes/cliente HTTP/1.1\" 201 315 \"-\" \"-\"","timestamp":"2026-07-03T02:50:45.867Z"}
+{"level":"info","message":"::ffff:127.0.0.1 - - [03/Jul/2026:02:50:45 +0000] \"POST /api/avaliacoes/cliente HTTP/1.1\" 409 57 \"-\" \"-\"","timestamp":"2026-07-03T02:50:45.994Z"}
