@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">58.82% </span>
+                <span class="strong">88.23% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>10/17</span>
+                <span class='fraction'>15/17</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">27.27% </span>
+                <span class="strong">63.63% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>3/11</span>
+                <span class='fraction'>7/11</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">58.82% </span>
+                <span class="strong">88.23% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>10/17</span>
+                <span class='fraction'>15/17</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line medium'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -153,31 +153,31 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">13x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-yes">6x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -214,34 +214,34 @@ class AppError extends Error {
 // O middleware em si — Express identifica pelo 4º parâmetro (err)
 const errorHandler = (err, req, res, next) =&gt; {
     // --- Erro do PostgreSQL ---
-    <span class="missing-if-branch" title="else path not taken" >E</span>if (err.code &amp;&amp; PG_ERRORS[err.code]) {
+    if (err.code &amp;&amp; PG_ERRORS[err.code]) {
         const { status, mensagem } = PG_ERRORS[err.code];
         return res.status(status).json({ erro: mensagem });
     }
 &nbsp;
     // --- Erro operacional lançado manualmente com AppError ---
-<span class="cstat-no" title="statement not covered" >    if (err.isOperational) {</span>
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (err.isOperational) {
 <span class="cstat-no" title="statement not covered" >        return res.status(err.status).json({ erro: err.message });</span>
     }
 &nbsp;
     // --- JSON malformado (body-parser) ---
-<span class="cstat-no" title="statement not covered" >    if (err.type === 'entity.parse.failed') {</span>
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (err.type === 'entity.parse.failed') {
 <span class="cstat-no" title="statement not covered" >        return res.status(400).json({ erro: 'O corpo da requisição não é um JSON válido.' });</span>
     }
 &nbsp;
     // --- Erro desconhecido (bug real) ---
     // Em produção, não expõe detalhes internos
-<span class="cstat-no" title="statement not covered" >    logger.error(`[ERROR] ERRO_NAO_TRATADO: ${err.message}`, { </span>
+    logger.error(`[ERROR] ERRO_NAO_TRATADO: ${err.message}`, { 
         stack: err.stack,
         url: req.originalUrl,
         method: req.method
     });
 &nbsp;
-    const isProd = <span class="cstat-no" title="statement not covered" >process.env.NODE_ENV === 'production';</span>
-<span class="cstat-no" title="statement not covered" >    return res.status(500).json({</span>
+    const isProd = process.env.NODE_ENV === 'production';
+    return res.status(500).json({
         erro: 'Erro interno do servidor.',
         // Em desenvolvimento, o front-end ainda recebe o erro para te ajudar a debugar
-        ...(isProd ? {} : { detalhes: err.message }),
+        ...(isProd ? <span class="branch-0 cbranch-no" title="branch not covered" >{} </span>: { detalhes: err.message }),
     });
 };
 &nbsp;
@@ -253,7 +253,7 @@ module.exports = { errorHandler, AppError };
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-03T02:32:24.524Z
+                at 2026-07-03T02:47:56.149Z
             </div>
         <script src="../prettify.js"></script>
         <script>
