@@ -97,8 +97,8 @@ const executarMigration = async () => {
 
         // Avaliações: média do profissional
         await cliente.query(`
-            CREATE INDEX IF NOT EXISTS idx_avaliacoes_profissional
-            ON avaliacoes (profissional_id, nota);
+            CREATE INDEX IF NOT EXISTS idx_avaliacoes_avaliado
+            ON avaliacoes (avaliado_id, nota);
         `);
 
         await cliente.query('COMMIT');
