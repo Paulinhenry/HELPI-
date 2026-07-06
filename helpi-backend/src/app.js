@@ -40,13 +40,15 @@ const app = express();
 // Helmet — Define headers HTTP de segurança (XSS, clickjacking, etc.)
 app.use(helmet());
 
-// CORS — Restrito por ambiente (não mais origin: '*' em produção)
+// CORS — Restrito por ambiente
+// SEGURANÇA: origin '*' com credentials:true é inválido pela spec CORS.
+// Em produção usa CORS_ORIGIN do .env; em dev usa lista local explícita.
 const corsOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-    : ['*'];
+    : ['http://localhost:3000', 'http://localhost:8080', 'http://localhost:19006'];
 
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' ? corsOrigins : '*',
+    origin: corsOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -87,8 +89,10 @@ app.use('/api', globalLimiter);
 // Middlewares de Parsing e Logging
 // =============================================================
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true }));
+// SEGURANÇA: Limite de 100kb protege contra DoS via payload gigante.
+// A rota de webhook do MercadoPago é tratada com express.raw() separadamente.
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
 
 // =============================================================

@@ -27,7 +27,7 @@ void main() {
       mockService = MockAvaliacaoService();
     });
 
-    Widget _construirApp() {
+    Widget construirApp() {
       return MaterialApp(
         home: AvaliacaoScreen(
           chamadoId: 'uuid-teste-123',
@@ -38,13 +38,13 @@ void main() {
     }
 
     testWidgets('Deve exibir o nome do cliente no ecrã', (tester) async {
-      await tester.pumpWidget(_construirApp());
+      await tester.pumpWidget(construirApp());
 
       expect(find.textContaining('Sr. Antônio'), findsOneWidget);
     });
 
     testWidgets('UX Profissional: Clicar em 5 estrelas mostra Tags Verdes de Bom Cliente', (tester) async {
-      await tester.pumpWidget(_construirApp());
+      await tester.pumpWidget(construirApp());
 
       // No início, as tags não estão visíveis
       expect(find.text('Ótimo Cliente'), findsNothing);
@@ -60,7 +60,7 @@ void main() {
     });
 
     testWidgets('UX Profissional: Clicar em 1 estrela mostra Tags Vermelhas (Proteção)', (tester) async {
-      await tester.pumpWidget(_construirApp());
+      await tester.pumpWidget(construirApp());
 
       // Clica na 1ª estrela
       final estrelas = find.byIcon(Icons.star_outline_rounded);
@@ -74,7 +74,7 @@ void main() {
     });
 
     testWidgets('Deve permitir avaliar o cliente e enviar para o Motor de Confiança', (tester) async {
-      await tester.pumpWidget(_construirApp());
+      await tester.pumpWidget(construirApp());
 
       // 1. Dar 5 estrelas
       await tester.tap(find.byIcon(Icons.star_outline_rounded).last);

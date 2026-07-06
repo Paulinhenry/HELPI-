@@ -19,7 +19,10 @@ const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
 
     // SSL: obrigatório em produção (Neon, Supabase, etc.)
-    ssl: process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: false },
+    // SEGURANÇA: rejectUnauthorized=true em produção para evitar MITM
+    ssl: process.env.DB_SSL === 'false'
+        ? false
+        : { rejectUnauthorized: process.env.NODE_ENV === 'production' },
 
     // ─── Configurações de Pool para Escala ───
     max: parseInt(process.env.DB_POOL_MAX, 10) || 20,
