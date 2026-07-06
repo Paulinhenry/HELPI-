@@ -50,6 +50,7 @@ dependencies:
   url_launcher: ^6.3.1
   lottie: ^3.4.0
   flutter_map_cancellable_tile_provider: ^3.0.2
+  google_fonts: ^6.2.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -33,7 +33,7 @@ void main() {
       };
     });
 
-    Widget _construirApp() {
+    Widget construirApp() {
       return MaterialApp(
         home: AvaliacaoScreen(
           data: mockData,
@@ -43,14 +43,14 @@ void main() {
     }
 
     testWidgets('Deve exibir o nome do profissional no ecrã', (tester) async {
-      await tester.pumpWidget(_construirApp());
+      await tester.pumpWidget(construirApp());
 
       expect(find.textContaining('Eletricista João'), findsOneWidget);
       expect(find.text('Como foi o serviço de Eletricista João?'), findsOneWidget);
     });
 
     testWidgets('UX Dinâmica: Clicar em 5 estrelas mostra Tags Verdes e Gorjeta', (tester) async {
-      await tester.pumpWidget(_construirApp());
+      await tester.pumpWidget(construirApp());
 
       // No início, as tags não estão visíveis
       expect(find.text('Excelente'), findsNothing);
@@ -73,7 +73,7 @@ void main() {
     });
 
     testWidgets('UX Dinâmica: Clicar em 1 estrela mostra Tags Vermelhas (Red Flags)', (tester) async {
-      await tester.pumpWidget(_construirApp());
+      await tester.pumpWidget(construirApp());
 
       // Clica na 1ª estrela
       final estrelas = find.byIcon(Icons.star_outline_rounded);
@@ -90,7 +90,7 @@ void main() {
     });
 
     testWidgets('Deve permitir selecionar tags, gorjeta e enviar avaliação com sucesso', (tester) async {
-      await tester.pumpWidget(_construirApp());
+      await tester.pumpWidget(construirApp());
 
       // 1. Dar 5 estrelas
       await tester.tap(find.byIcon(Icons.star_outline_rounded).last);

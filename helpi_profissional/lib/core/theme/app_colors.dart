@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Helpi Design System — Premium Color Tokens
-/// Inspired by award-winning apps: Uber, Airbnb, Linear, Vercel
+/// Helpi Profissional — Design System Color Tokens
 class AppColors {
   AppColors._();
 
@@ -9,38 +8,30 @@ class AppColors {
   static const Color primary = Color(0xFF2563EB);
   static const Color primaryLight = Color(0xFF3B82F6);
   static const Color primaryDark = Color(0xFF1D4ED8);
-  static const Color primaryGlow = Color(0x402563EB);
 
-  // Legacy alias (mantém compatibilidade)
-  static const Color primaryColor = primary;
+  // ─── Online / Active ──────────────────────────────────────────────────────
+  static const Color online = Color(0xFF10B981);
+  static const Color onlineGlow = Color(0x4010B981);
+  static const Color onlineLight = Color(0xFF34D399);
 
-  // ─── Secondary / Accent ──────────────────────────────────────────────────
-  static const Color accent = Color(0xFF6366F1);
-  static const Color accentLight = Color(0xFF818CF8);
+  // ─── Offline ──────────────────────────────────────────────────────────────
+  static const Color offline = Color(0xFF566880);
 
   // ─── Feedback ────────────────────────────────────────────────────────────
   static const Color success = Color(0xFF10B981);
-  static const Color successLight = Color(0xFF34D399);
   static const Color successGlow = Color(0x3010B981);
   static const Color error = Color(0xFFEF4444);
-  static const Color errorLight = Color(0xFFFCA5A5);
   static const Color errorGlow = Color(0x30EF4444);
   static const Color warning = Color(0xFFF59E0B);
-  static const Color warningGlow = Color(0x30F59E0B);
   static const Color info = Color(0xFF0EA5E9);
 
   // ─── Dark Surfaces ────────────────────────────────────────────────────────
-  static const Color bg0 = Color(0xFF060C15);       // Deepest background
-  static const Color bg1 = Color(0xFF0B1120);       // Main background
-  static const Color bg2 = Color(0xFF111827);       // Card background
-  static const Color bg3 = Color(0xFF1A2337);       // Elevated card
-  static const Color bg4 = Color(0xFF243047);       // Floating elements
-  static const Color bg5 = Color(0xFF2E3E5A);       // Borders / dividers
-
-  // Legacy aliases
-  static const Color background = bg1;
-  static const Color surface = bg2;
-  static const Color surfaceElevated = bg3;
+  static const Color bg0 = Color(0xFF060C15);
+  static const Color bg1 = Color(0xFF0B1120);
+  static const Color bg2 = Color(0xFF111827);
+  static const Color bg3 = Color(0xFF1A2337);
+  static const Color bg4 = Color(0xFF243047);
+  static const Color bg5 = Color(0xFF2E3E5A);
 
   // ─── Text ────────────────────────────────────────────────────────────────
   static const Color textPrimary = Color(0xFFFFFFFF);
@@ -50,9 +41,8 @@ class AppColors {
   static const Color white = Color(0xFFFFFFFF);
 
   // ─── Borders ─────────────────────────────────────────────────────────────
-  static const Color border = Color(0x1AFFFFFF);       // 10% white
-  static const Color borderStrong = Color(0x33FFFFFF); // 20% white
-  static const Color borderPrimary = Color(0x402563EB);
+  static const Color border = Color(0x1AFFFFFF);
+  static const Color borderStrong = Color(0x33FFFFFF);
 
   // ─── Gradients ───────────────────────────────────────────────────────────
   static const LinearGradient primaryGradient = LinearGradient(
@@ -61,16 +51,10 @@ class AppColors {
     colors: [Color(0xFF2563EB), Color(0xFF6366F1)],
   );
 
-  static const LinearGradient successGradient = LinearGradient(
+  static const LinearGradient onlineGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [Color(0xFF059669), Color(0xFF10B981)],
-  );
-
-  static const LinearGradient errorGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFFDC2626), Color(0xFFEF4444)],
   );
 
   static const LinearGradient bgGradient = LinearGradient(
@@ -78,24 +62,6 @@ class AppColors {
     end: Alignment.bottomCenter,
     colors: [Color(0xFF060C15), Color(0xFF0B1120)],
   );
-
-  static const LinearGradient glassGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0x1AFFFFFF), Color(0x0DFFFFFF)],
-  );
-
-  // ─── Map Overlays ────────────────────────────────────────────────────────
-  static const Color mapOverlayTop = Color(0xCC060C15);
-  static const Color mapOverlayBottom = Color(0xE6060C15);
-
-  // ─── Category Icon Colors ────────────────────────────────────────────────
-  static const Color catElectric = Color(0xFFFBBF24);
-  static const Color catPlumbing = Color(0xFF38BDF8);
-  static const Color catKey = Color(0xFFA78BFA);
-  static const Color catCleaning = Color(0xFF34D399);
-  static const Color catHandyman = Color(0xFFF97316);
-  static const Color catDefault = Color(0xFF2563EB);
 
   // ─── Shadows ─────────────────────────────────────────────────────────────
   static List<BoxShadow> get cardShadow => [
@@ -115,12 +81,11 @@ class AppColors {
     ),
   ];
 
-  static List<BoxShadow> get successGlowShadow => [
+  static List<BoxShadow> get onlineGlowShadow => [
     BoxShadow(
-      color: success.withValues(alpha: 0.4),
-      blurRadius: 24,
-      offset: const Offset(0, 6),
-      spreadRadius: -2,
+      color: online.withValues(alpha: 0.5),
+      blurRadius: 32,
+      spreadRadius: 4,
     ),
   ];
 
