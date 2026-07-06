@@ -115,7 +115,8 @@ const criarChamado = async (req, res, next) => {
                     io.to(socketId).emit('novo_chamado_emergencia', {
                         chamado_id: novoChamado.rows[0].id,
                         categoria: categoria_solicitada,
-                        descricao: problema_descricao,
+                        // SEGURANÇA: Truncado a 500 chars para evitar payload gigante via WebSocket
+                        descricao: problema_descricao.substring(0, 500),
                         distancia_metros: Math.round(profissional.distancia_km * 1000), 
                         // Mostra o valor COM DESCONTO de 10% da plataforma para o profissional
                         valor_sugerido: estimativa.preco_sugerido * 0.90, 

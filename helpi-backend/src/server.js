@@ -1,22 +1,25 @@
 const app = require('./app');
 const http = require('http');
 const { Server } = require('socket.io');
+const jwt = require('jsonwebtoken');
 const logger = require('./utils/logger');
-const { TAXA_DESLOCAMENTO, MAPA_CATEGORIAS } = require('./utils/constants');
+const { TAXA_DESLOCAMENTO } = require('./utils/constants');
 
 const PORT = process.env.PORT || 3000;
 
 // Configuração de CORS por ambiente (igual ao Express)
+// SEGURANÇA: Alinhado com a política CORS do Express — sem wildcard
 const corsOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-    : ['*'];
+    : ['http://localhost:3000', 'http://localhost:8080', 'http://localhost:19006'];
 
 // 1. Criamos o servidor HTTP e anexamos o Socket.io a ele
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: process.env.NODE_ENV === 'production' ? corsOrigins : '*',
-        methods: ["GET", "POST", "PATCH"]
+        origin: corsOrigins,
+        methods: ["GET", "POST", "PATCH"],
+        credentials: true,
     }
 });
 
@@ -27,22 +30,56 @@ const pool = require('./config/database');
 // Chave: ID do Profissional | Valor: ID do Socket do telemóvel dele
 const profissionaisConectados = new Map();
 
+// =============================================================
+// SEGURANÇA: Autenticação JWT no handshake do Socket.IO
+// Impede que qualquer cliente WebSocket se faça passar por outro usuário.
+// =============================================================
+io.use((socket, next) => {
+    try {
+        const token = socket.handshake.auth?.token ||
+                      socket.handshake.headers?.authorization?.replace('Bearer ', '');
+
+        if (!token) {
+            // Permite conexões anônimas (clientes sem login), mas sem dados sensíveis
+            socket.decoded = null;
+            return next();
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        socket.decoded = decoded; // { id, tipo } — disponível em todos os eventos
+        next();
+    } catch (err) {
+        // Token inválido: ainda permite conexão, mas sem identidade verificada
+        socket.decoded = null;
+        next();
+    }
+});
+
 io.on('connection', (socket) => {
     logger.info(`[SOCKET] CONEXÃO: novo dispositivo conectado (socket_id: ${socket.id})`);
 
     // Quando o app do cliente conecta, junta-se à sala do cliente para receber notificações
     socket.on('entrar_sala_cliente', (dados) => {
-        const { cliente_id } = dados;
+        // SEGURANÇA: Valida que o cliente só entra na sua própria sala
+        const cliente_id = socket.decoded?.tipo === 'cliente' ? socket.decoded.id : null;
         if (cliente_id) {
             socket.join(`cliente:${cliente_id}`);
             logger.info(`[SOCKET] SALA_CLIENTE: cliente ${cliente_id} entrou na sala de notificações`);
+        } else {
+            logger.warn(`[SOCKET] SALA_CLIENTE_NEGADA: tentativa sem token válido (socket: ${socket.id})`);
         }
     });
 
     // Quando o telemóvel do trabalhador abrir a app e clicar "Estou online!"
     socket.on('ficar_online', async (dados) => {
         try {
-            const { profissional_id, latitude, longitude } = dados;
+            // SEGURANÇA: ID vem do JWT verificado no handshake, não do payload do cliente
+            if (!socket.decoded || socket.decoded.tipo !== 'profissional') {
+                logger.warn(`[RADAR] ONLINE_NEGADO: socket sem token de profissional válido (socket: ${socket.id})`);
+                return;
+            }
+            const profissional_id = socket.decoded.id;
+            const { latitude, longitude } = dados;
 
             // CORREÇÃO: Limpa socket antigo se o profissional reconectar com novo socket
             const socketAntigo = profissionaisConectados.get(profissional_id);
@@ -70,6 +107,8 @@ io.on('connection', (socket) => {
 
             // --- NOVO: VERIFICAR CHAMADOS PENDENTES QUE ELE PERDEU ---
             if (latitude && longitude) {
+                // SEGURANÇA: Query totalmente parametrizada — sem template literals.
+                // Antes usava interpolação de MAPA_CATEGORIAS diretamente na SQL (SQL injection potencial).
                 const queryChamados = `
                     SELECT c.id, c.categoria_solicitada, c.problema_descricao,
                            ST_Distance(
@@ -79,14 +118,7 @@ io.on('connection', (socket) => {
                     FROM chamados_express c
                     CROSS JOIN (SELECT categoria FROM profissionais WHERE id = $3) p
                     WHERE c.status = 'procurando_profissional'
-                      AND (
-                          (p.categoria = '${MAPA_CATEGORIAS['Elétrica']}' AND LOWER(c.categoria_solicitada) = 'elétrica') OR
-                          (p.categoria = '${MAPA_CATEGORIAS['Hidráulica']}' AND LOWER(c.categoria_solicitada) = 'hidráulica') OR
-                          (p.categoria = '${MAPA_CATEGORIAS['Chaveiro']}' AND LOWER(c.categoria_solicitada) = 'chaveiro') OR
-                          (p.categoria = '${MAPA_CATEGORIAS['Limpeza']}' AND LOWER(c.categoria_solicitada) = 'limpeza') OR
-                          (p.categoria = '${MAPA_CATEGORIAS['Montador']}' AND LOWER(c.categoria_solicitada) = 'montador') OR
-                          (LOWER(c.categoria_solicitada) = LOWER(p.categoria))
-                      )
+                      AND LOWER(c.categoria_solicitada) = LOWER(p.categoria)
                       AND ST_DWithin(
                           ST_SetSRID(ST_MakePoint(c.longitude_destino, c.latitude_destino), 4326)::geography,
                           ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
@@ -115,7 +147,10 @@ io.on('connection', (socket) => {
 
     // --- NOVO: RECEBER LOCALIZAÇÃO DO PROFISSIONAL EM TEMPO REAL ---
     socket.on('atualizar_localizacao', (dados) => {
-        const { profissional_id, latitude, longitude, cliente_id } = dados;
+        // SEGURANÇA: ID vem do JWT, não do payload
+        if (!socket.decoded || socket.decoded.tipo !== 'profissional') return;
+        const profissional_id = socket.decoded.id;
+        const { latitude, longitude, cliente_id } = dados;
         
         if (latitude && longitude && cliente_id) {
             // Emite a localização do profissional apenas para o cliente do chamado ativo
