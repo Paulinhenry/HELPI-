@@ -1,6 +1,7 @@
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/config/env.dart';
 import '../core/services/location_service.dart';
 
@@ -21,8 +22,12 @@ class SocketService {
     // Obtém URL do Env (remove /api/v1 para os websockets)
     String serverUrl = Env.baseUrl.split('/api/v1').first;
 
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access_token');
+
     _socket = io.io(serverUrl, io.OptionBuilder()
       .setTransports(['websocket'])
+      .setAuth({'token': token ?? ''})
       .disableAutoConnect()
       .build()
     );
