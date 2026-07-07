@@ -1,5 +1,6 @@
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/env.dart';
 
 class SocketService {
@@ -14,14 +15,19 @@ class SocketService {
   bool get isConnected => _socket != null && _socket!.connected;
 
   /// Conecta ao servidor WebSocket e junta-se à sala do cliente
-  void conectar(String clienteId) {
+  Future<void> conectar(String clienteId) async {
     if (_socket != null && _socket!.connected) return;
 
     // A URL do Env.baseUrl geralmente tem '/api/v1'. Precisamos apenas da raiz.
     String serverUrl = Env.baseUrl.split('/api/v1').first;
 
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access_token');
+
     _socket = io.io(serverUrl, io.OptionBuilder()
       .setTransports(['websocket'])
+      .setAuth({'token': token ?? ''})
+      .setExtraHeaders({'Authorization': 'Bearer $token'})
       .disableAutoConnect()
       .build()
     );

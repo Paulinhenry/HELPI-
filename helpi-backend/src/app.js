@@ -40,15 +40,8 @@ const app = express();
 // Helmet — Define headers HTTP de segurança (XSS, clickjacking, etc.)
 app.use(helmet());
 
-// CORS — Restrito por ambiente
-// SEGURANÇA: origin '*' com credentials:true é inválido pela spec CORS.
-// Em produção usa CORS_ORIGIN do .env; em dev usa lista local explícita.
-const corsOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-    : ['http://localhost:3000', 'http://localhost:8080', 'http://localhost:19006'];
-
 app.use(cors({
-    origin: corsOrigins,
+    origin: true, // Reflete a origem exata do request (permite qualquer porto de localhost)
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,

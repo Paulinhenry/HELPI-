@@ -7,17 +7,11 @@ const { TAXA_DESLOCAMENTO } = require('./utils/constants');
 
 const PORT = process.env.PORT || 3000;
 
-// Configuração de CORS por ambiente (igual ao Express)
-// SEGURANÇA: Alinhado com a política CORS do Express — sem wildcard
-const corsOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-    : ['http://localhost:3000', 'http://localhost:8080', 'http://localhost:19006'];
-
 // 1. Criamos o servidor HTTP e anexamos o Socket.io a ele
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: corsOrigins,
+        origin: true, // Reflete a origem exata do request
         methods: ["GET", "POST", "PATCH"],
         credentials: true,
     }
