@@ -43,6 +43,9 @@ dependencies:
   # Guardar o Token JWT localmente no dispositivo
   shared_preferences: ^2.3.0
 
+  # SEGURANÇA V13: Armazena tokens JWT no KeyStore (Android) / Keychain (iOS)
+  flutter_secure_storage: ^9.2.4
+
   # Gestor de estado (avisa a app quando o user está logado/deslogado)
   provider: ^6.1.0
 

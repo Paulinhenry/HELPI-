@@ -34,18 +34,16 @@ io.use((socket, next) => {
                       socket.handshake.headers?.authorization?.replace('Bearer ', '');
 
         if (!token) {
-            // Permite conexões anônimas (clientes sem login), mas sem dados sensíveis
-            socket.decoded = null;
-            return next();
+            // SEGURANÇA V3: Rejeita conexões sem token (previne DoS e enumeração)
+            return next(new Error('Autenticação obrigatória. Envie um token JWT válido.'));
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         socket.decoded = decoded; // { id, tipo } — disponível em todos os eventos
         next();
     } catch (err) {
-        // Token inválido: ainda permite conexão, mas sem identidade verificada
-        socket.decoded = null;
-        next();
+        // SEGURANÇA V3: Token inválido = conexão rejeitada
+        return next(new Error('Token inválido ou expirado.'));
     }
 });
 
@@ -140,13 +138,31 @@ io.on('connection', (socket) => {
     });
 
     // --- NOVO: RECEBER LOCALIZAÇÃO DO PROFISSIONAL EM TEMPO REAL ---
-    socket.on('atualizar_localizacao', (dados) => {
+    socket.on('atualizar_localizacao', async (dados) => {
         // SEGURANÇA: ID vem do JWT, não do payload
         if (!socket.decoded || socket.decoded.tipo !== 'profissional') return;
         const profissional_id = socket.decoded.id;
         const { latitude, longitude, cliente_id } = dados;
         
         if (latitude && longitude && cliente_id) {
+            // SEGURANÇA V4: Valida que o cliente_id pertence a um chamado ativo deste profissional
+            // Previne que um profissional envie localização para a sala de outro cliente
+            try {
+                const chamadoAtivo = await pool.query(
+                    `SELECT id FROM chamados_express
+                     WHERE profissional_id = $1 AND cliente_id = $2 AND status IN ('a_caminho', 'em_servico')
+                     LIMIT 1`,
+                    [profissional_id, cliente_id]
+                );
+                if (chamadoAtivo.rows.length === 0) {
+                    logger.warn(`[RADAR] LOCALIZACAO_NEGADA: profissional ${profissional_id} tentou enviar coords para cliente ${cliente_id} sem chamado ativo`);
+                    return;
+                }
+            } catch (err) {
+                logger.error(`[RADAR] ERRO_VALIDACAO_LOC: ${err.message}`);
+                return;
+            }
+
             // Emite a localização do profissional apenas para o cliente do chamado ativo
             io.to(`cliente:${cliente_id}`).emit('localizacao_profissional', {
                 profissional_id,

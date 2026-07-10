@@ -9,6 +9,7 @@ const express = require('express');
 const router = express.Router();
 const profissionaisController = require('../controllers/profissionais.controller');
 const { validarCadastroProfissional } = require('../middlewares/validators/profissionalValidator');
+const { validarUUID } = require('../middlewares/validators/uuidValidator');
 
 /**
  * @openapi
@@ -129,6 +130,6 @@ router.get('/', profissionaisController.listarProfissionais);
 router.post('/', validarCadastroProfissional, profissionaisController.registarProfissional);
 router.put('/perfil', authProfissional, profissionaisController.atualizarPerfil);
 // IMPORTANTE: Rota com parâmetro (:id) deve vir DEPOIS das rotas fixas
-router.get('/:id', profissionaisController.verProfissional);
+router.get('/:id', validarUUID, profissionaisController.verProfissional);
 
 module.exports = router;

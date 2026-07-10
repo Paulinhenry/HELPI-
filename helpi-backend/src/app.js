@@ -89,10 +89,12 @@ app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
 
 // =============================================================
-// Documentação Swagger
+// Documentação Swagger (SEGURANÇA V11: desativada em produção)
 // =============================================================
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+if (process.env.NODE_ENV !== 'production') {
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+}
 
 // =============================================================
 // Rotas da API v1 (Versionadas)
@@ -160,8 +162,11 @@ app.get('/api/status', async (req, res) => {
 // =============================================================
 
 app.use((req, res) => {
+    // SEGURANÇA V15: Sanitiza a URL para evitar XSS refletido
+    const metodoSeguro = String(req.method).replace(/[^A-Z]/g, '');
+    const urlSegura = String(req.originalUrl).replace(/[<>"'&]/g, '');
     res.status(404).json({
-        erro: `Rota ${req.method} ${req.originalUrl} não encontrada.`,
+        erro: `Rota ${metodoSeguro} ${urlSegura} não encontrada.`,
         sugestao: 'Consulte a documentação em /api-docs'
     });
 });
