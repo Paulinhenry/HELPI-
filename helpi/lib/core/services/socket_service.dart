@@ -1,6 +1,6 @@
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/env.dart';
 
 class SocketService {
@@ -21,8 +21,9 @@ class SocketService {
     // A URL do Env.baseUrl geralmente tem '/api/v1'. Precisamos apenas da raiz.
     String serverUrl = Env.baseUrl.split('/api/v1').first;
 
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('access_token');
+    // SEGURANÇA V13: Leitura do token via armazenamento seguro
+    const storage = FlutterSecureStorage();
+    final token = await storage.read(key: 'access_token');
 
     _socket = io.io(serverUrl, io.OptionBuilder()
       .setTransports(['websocket'])

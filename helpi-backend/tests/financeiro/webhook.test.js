@@ -39,6 +39,19 @@ jest.mock('../../src/config/database', () => ({
 }));
 
 describe('🔔 Webhook Mercado Pago', () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+        jest.resetModules();
+        process.env = { ...originalEnv };
+        // Remove a chave para que o middleware ignore a validação (bypass de dev/test)
+        delete process.env.MP_WEBHOOK_SECRET;
+        process.env.NODE_ENV = 'development';
+    });
+
+    afterEach(() => {
+        process.env = originalEnv;
+    });
 
     // ─── TESTE DE SOBREVIVÊNCIA ─────────────────────────────
     // O Mercado Pago BANE servidores que demoram mais de ~1s a responder

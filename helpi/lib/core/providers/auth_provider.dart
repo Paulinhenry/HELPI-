@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:dio/dio.dart';
 import '../services/socket_service.dart';
 import '../config/env.dart';
@@ -9,6 +9,9 @@ class AuthProvider with ChangeNotifier {
   bool _isLoggedIn = false;
   bool _isLoading = true; 
   String? _userId;
+
+  // SEGURANÇA V13: Armazenamento seguro para tokens
+  static const _storage = FlutterSecureStorage();
 
   bool get isLoggedIn => _isLoggedIn;
   bool get isLoading => _isLoading;
@@ -29,8 +32,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> checkLoginStatus() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('access_token');
+    final token = await _storage.read(key: 'access_token');
 
     if (token != null && token.isNotEmpty) {
       final decoded = _decodeJwt(token);
@@ -41,7 +43,7 @@ class AuthProvider with ChangeNotifier {
         _userId = decoded?['id']?.toString();
       } else {
         // Token expirado - tentar refresh
-        final refreshToken = prefs.getString('refresh_token');
+        final refreshToken = await _storage.read(key: 'refresh_token');
         if (refreshToken != null && refreshToken.isNotEmpty) {
           try {
             final refreshDio = Dio(BaseOptions(baseUrl: Env.baseUrl));
@@ -51,7 +53,7 @@ class AuthProvider with ChangeNotifier {
 
             if (refreshResponse.statusCode == 200) {
               final novoToken = refreshResponse.data['access_token'];
-              await prefs.setString('access_token', novoToken);
+              await _storage.write(key: 'access_token', value: novoToken);
               _isLoggedIn = true;
               final newDecoded = _decodeJwt(novoToken);
               _userId = newDecoded?['id']?.toString();
@@ -78,10 +80,8 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> login(String accessToken, String refreshToken) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    await prefs.setString('access_token', accessToken);
-    await prefs.setString('refresh_token', refreshToken);
+    await _storage.write(key: 'access_token', value: accessToken);
+    await _storage.write(key: 'refresh_token', value: refreshToken);
 
     _isLoggedIn = true;
     final decoded = _decodeJwt(accessToken);
@@ -91,9 +91,8 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('access_token'); 
-    await prefs.remove('refresh_token'); 
+    await _storage.delete(key: 'access_token'); 
+    await _storage.delete(key: 'refresh_token'); 
     _isLoggedIn = false;
     _userId = null;
     

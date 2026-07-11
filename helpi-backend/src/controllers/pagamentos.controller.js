@@ -60,8 +60,14 @@ const processarPagamento = async (req, res, next) => {
         }
         const clienteData = clienteQuery.rows[0];
 
-        // Se o CPF for nulo na base (por registros antigos), usamos um default ou omitimos
-        const cpfLimpo = clienteData.cpf ? clienteData.cpf.replace(/\D/g, '') : '00000000000';
+        // SEGURANÇA V7: Rejeita pagamento se o cliente não tem CPF válido cadastrado
+        if (!clienteData.cpf) {
+            return res.status(400).json({ erro: 'CPF não cadastrado. Atualize seu perfil antes de realizar pagamentos.' });
+        }
+        const cpfLimpo = clienteData.cpf.replace(/\D/g, '');
+        if (cpfLimpo.length !== 11) {
+            return res.status(400).json({ erro: 'CPF inválido no cadastro. Atualize seu perfil.' });
+        }
 
         const paymentBody = {
             transaction_amount: valorTotal,

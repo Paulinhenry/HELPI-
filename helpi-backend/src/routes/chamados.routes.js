@@ -12,6 +12,7 @@ const chamadosController = require('../controllers/chamados.controller');
 const authCliente = require('../middlewares/authCliente');
 const authProfissional = require('../middlewares/authProfissional');
 const { validarCriacaoChamado } = require('../middlewares/validators/chamadoValidator');
+const { validarUUID } = require('../middlewares/validators/uuidValidator');
 
 /**
  * @openapi
@@ -155,10 +156,10 @@ router.get('/em-andamento', authProfissional, chamadosController.verificarChamad
 router.get('/meu-ativo', authCliente, chamadosController.verificarChamadoAtivoCliente);
 
 // --- NOVA ROTA DE CANCELAMENTO AQUI ---
-router.patch('/:id/cancelar', authCliente, chamadosController.cancelarChamado);
+router.patch('/:id/cancelar', authCliente, validarUUID, chamadosController.cancelarChamado);
 
-router.put('/:id/aceitar', authProfissional, chamadosController.aceitarChamado);
-router.put('/:id/chegada', authProfissional, chamadosController.registrarChegada);
-router.put('/:id/finalizar', authProfissional, chamadosController.finalizarChamado);
+router.put('/:id/aceitar', authProfissional, validarUUID, chamadosController.aceitarChamado);
+router.put('/:id/chegada', authProfissional, validarUUID, chamadosController.registrarChegada);
+router.put('/:id/finalizar', authProfissional, validarUUID, chamadosController.finalizarChamado);
 
 module.exports = router;
