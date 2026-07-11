@@ -1,4 +1,4 @@
-const { MercadoPagoConfig, Payment } = require('mercadopago');
+const { MercadoPagoConfig, Payment, Order } = require('mercadopago');
 
 if (!process.env.MP_ACCESS_TOKEN) {
     console.error('[ERRO FATAL] MP_ACCESS_TOKEN não está definido nas variáveis de ambiente!');
@@ -11,8 +11,10 @@ const client = new MercadoPagoConfig({
 });
 
 const payment = new Payment(client);
+const order = new Order(client);
 
 module.exports = {
     client,
-    payment
+    payment,
+    order
 };

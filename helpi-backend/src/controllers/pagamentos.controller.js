@@ -69,22 +69,49 @@ const processarPagamento = async (req, res, next) => {
             return res.status(400).json({ erro: 'CPF inválido no cadastro. Atualize seu perfil.' });
         }
 
+        const method_id = payment_method_id || 'pix';
+        
         const paymentBody = {
-            transaction_amount: valorTotal,
+            type: 'online',
+            processing_mode: 'automatic',
+            external_reference: chamado_id,
+            total_amount: valorTotal.toFixed(2),
             description: description || `Serviço Helpi - Chamado ${chamado_id.split('-')[0]}`,
-            payment_method_id: payment_method_id || 'pix', // 🔓 CTO Rule removed to support credit cards
             payer: {
-                email: clienteData.email || payer.email, // Fallback se não tiver
+                email: clienteData.email || payer?.email, // Fallback se não tiver
                 identification: {
                     type: 'CPF',
                     number: cpfLimpo.length === 11 ? cpfLimpo : '00000000000' // Mercado Pago exige 11 digitos
                 }
+            },
+            transactions: {
+                payments: [
+                    {
+                        amount: valorTotal.toFixed(2),
+                        payment_method: {
+                            id: method_id
+                        }
+                    }
+                ]
             }
         };
 
-        if (token) paymentBody.token = token;
-        if (installments) paymentBody.installments = installments;
-        if (issuer_id) paymentBody.issuer_id = issuer_id;
+        // Adiciona campos extra dependendo do meio de pagamento
+        if (method_id === 'pix') {
+            paymentBody.transactions.payments[0].payment_method.type = 'bank_transfer';
+        }
+
+        if (token) {
+            paymentBody.transactions.payments[0].payment_method.type = 'credit_card';
+            paymentBody.transactions.payments[0].payment_method.token = token;
+        }
+        if (installments) {
+            paymentBody.transactions.payments[0].payment_method.installments = installments;
+        }
+        if (issuer_id) {
+            // Opcional no Order API mas podemos enviar se necessário (geralmente vai no payment_method)
+            // Para Order API, issuer_id geralmente já vem embutido no token.
+        }
 
         const requestOptions = {
             body: paymentBody,
@@ -93,25 +120,33 @@ const processarPagamento = async (req, res, next) => {
             }
         };
 
-        const mpResponse = await payment.create(requestOptions);
+        // Utiliza a nova API de Orders (Checkout Transparente unificado)
+        const { order } = require('../config/mercadopago');
+        const mpResponse = await order.create(requestOptions);
 
-        // 3. Guardar Pagamento na BD
+        // O response de Order contém a lista de transações (payments)
+        const paymentData = mpResponse.transactions?.payments?.[0];
+        if (!paymentData) {
+            throw new Error('Mercado Pago não retornou os dados do pagamento dentro da order.');
+        }
+
+        // 3. Guardar Pagamento na BD (usamos o ID do pagamento gerado, não o ID da order em si)
         await pool.query(
             `INSERT INTO pagamentos (chamado_id, mp_payment_id, valor_total, valor_profissional, valor_plataforma, status, metodo_pagamento)
              VALUES ($1, $2, $3, $4, $5, $6, $7)`,
             [
                 chamado_id, 
-                mpResponse.id.toString(), 
+                paymentData.id.toString(), 
                 valorTotal, 
                 valorProfissional, 
                 valorPlataforma, 
-                mpResponse.status, // 'approved', 'in_process', 'rejected'
-                payment_method_id
+                paymentData.status || mpResponse.status, // 'approved', 'in_process', 'rejected'
+                method_id
             ]
         );
 
         // Atualizar status do chamado se aprovado imediatamente
-        if (mpResponse.status === 'approved') {
+        if (paymentData.status === 'approved' || mpResponse.status === 'approved') {
             await pool.query(`UPDATE chamados_express SET pagamento_status = 'pago' WHERE id = $1`, [chamado_id]);
             
             // Notificar Profissional
@@ -129,11 +164,11 @@ const processarPagamento = async (req, res, next) => {
         }
 
         return res.json({
-            status: mpResponse.status,
-            status_detail: mpResponse.status_detail,
-            id: mpResponse.id,
-            qr_code: mpResponse.point_of_interaction?.transaction_data?.qr_code,
-            qr_code_base64: mpResponse.point_of_interaction?.transaction_data?.qr_code_base64
+            status: paymentData.status || mpResponse.status,
+            id: paymentData.id,
+            order_id: mpResponse.id,
+            qr_code: paymentData.payment_method?.qr_code || paymentData.qr_code,
+            qr_code_base64: paymentData.payment_method?.qr_code_base64 || paymentData.qr_code_base64
         });
         
     } catch (erro) {
