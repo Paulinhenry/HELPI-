@@ -18,13 +18,15 @@ jest.mock('../../src/config/database', () => ({
 jest.mock('../../src/config/mercadopago', () => ({
     client: {},
     payment: {
-        create: jest.fn(),
         get: jest.fn(),
+    },
+    order: {
+        create: jest.fn()
     }
 }));
 
 const pool = require('../../src/config/database');
-const { payment } = require('../../src/config/mercadopago');
+const { order } = require('../../src/config/mercadopago');
 
 const gerarTokenCliente = (id = 'cliente-001') =>
     jwt.sign({ id, tipo: 'cliente', tokenType: 'access' }, process.env.JWT_SECRET, { expiresIn: '15m' });
@@ -52,16 +54,17 @@ describe('POST /api/v1/pagamentos/processar', () => {
             // 4. UPDATE chamado (pago)
             .mockResolvedValueOnce({ rows: [] });
 
-        payment.create.mockResolvedValueOnce({
-            id: 'mp-payment-12345',
+        order.create.mockResolvedValueOnce({
+            id: 'mp-order-999',
             status: 'approved',
-            status_detail: 'accredited',
-            point_of_interaction: {
-                transaction_data: {
+            transactions: {
+                payments: [{
+                    id: 'mp-payment-12345',
+                    status: 'approved',
                     qr_code: 'pix-code-123',
                     qr_code_base64: 'base64data',
-                },
-            },
+                }]
+            }
         });
 
         // Mock do io e profissionaisConectados via app.set
@@ -154,9 +157,15 @@ describe('POST /api/v1/pagamentos/processar', () => {
             })
             .mockResolvedValueOnce({ rows: [] }); // INSERT pagamento
 
-        payment.create.mockResolvedValueOnce({
-            id: 'mp-pay-999',
+        order.create.mockResolvedValueOnce({
+            id: 'mp-order-888',
             status: 'in_process',
+            transactions: {
+                payments: [{
+                    id: 'mp-pay-999',
+                    status: 'in_process'
+                }]
+            }
         });
 
         app.set('io', null);
