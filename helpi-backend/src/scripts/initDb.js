@@ -19,6 +19,8 @@ const criarTabelas = async () => {
                 email VARCHAR(100) UNIQUE NOT NULL,
                 senha VARCHAR(255) NOT NULL,
                 telefone VARCHAR(20) NOT NULL,
+                nota_media DECIMAL(3,2) DEFAULT 0.00,
+                total_avaliacoes INTEGER DEFAULT 0,
                 criado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             );
         `);
