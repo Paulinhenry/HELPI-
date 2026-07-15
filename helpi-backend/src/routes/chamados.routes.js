@@ -12,6 +12,8 @@ const chamadosController = require('../controllers/chamados.controller');
 const authCliente = require('../middlewares/authCliente');
 const authProfissional = require('../middlewares/authProfissional');
 const { validarCriacaoChamado } = require('../middlewares/validators/chamadoValidator');
+const authGeral = require('../middlewares/authGeral');
+const chatController = require('../controllers/chat.controller');
 const { validarUUID } = require('../middlewares/validators/uuidValidator');
 
 /**
@@ -161,5 +163,8 @@ router.patch('/:id/cancelar', authCliente, validarUUID, chamadosController.cance
 router.put('/:id/aceitar', authProfissional, validarUUID, chamadosController.aceitarChamado);
 router.put('/:id/chegada', authProfissional, validarUUID, chamadosController.registrarChegada);
 router.put('/:id/finalizar', authProfissional, validarUUID, chamadosController.finalizarChamado);
+
+// --- ROTA DE CHAT (CLIENTE E PROFISSIONAL) ---
+router.get('/:id/mensagens', authGeral, validarUUID, chatController.obterHistorico);
 
 module.exports = router;
