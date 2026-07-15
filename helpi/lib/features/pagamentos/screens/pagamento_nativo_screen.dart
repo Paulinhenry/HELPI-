@@ -122,6 +122,22 @@ class _PagamentoNativoScreenState extends State<PagamentoNativoScreen> {
                     );
                   },
                 ),
+                const SizedBox(height: 12),
+                _MetodoCard(
+                  icon: Icons.bug_report,
+                  title: 'Pular Pagamento (Teste)',
+                  subtitle: 'Apenas para desenvolvedores',
+                  color: Colors.orange,
+                  onTap: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AvaliacaoScreen(data: widget.data),
+                      ),
+                      (route) => false,
+                    );
+                  },
+                ),
               ],
 
               if (_processando)

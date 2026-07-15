@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../services/avaliacao_service.dart';
+import '../../chamados/screens/mapa_screen.dart';
+import '../../chamados/providers/chamados_provider.dart';
 
 class AvaliacaoScreen extends StatefulWidget {
   final Map<String, dynamic> data;
@@ -89,8 +92,14 @@ class _AvaliacaoScreenState extends State<AvaliacaoScreen> {
       }
 
       if (mounted) {
-        // Redireciona para a raiz após avaliação bem sucedida
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        // Resetar o estado do chamado atual
+        Provider.of<ChamadosProvider>(context, listen: false).resetarEstado();
+        
+        // Redireciona para o Mapa após avaliação bem sucedida
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const MapaScreen()),
+          (route) => false,
+        );
       }
     } catch (e) {
       setState(() => _enviando = false);

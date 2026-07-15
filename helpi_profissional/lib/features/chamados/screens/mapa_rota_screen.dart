@@ -18,6 +18,9 @@ import '../../../core/theme/app_text_styles.dart';
 import '../../../services/chamado_service.dart';
 import '../../../services/socket_service.dart';
 import '../../avaliacoes/screens/avaliacao_screen.dart';
+import '../../../core/config/env.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'chat_screen.dart';
 
 /// Tela de Mapa — App Profissional
 /// Mostra rota em tempo real até o cliente + controles de serviço.
@@ -872,6 +875,32 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
                           ],
                         ),
                       ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Botão Chat
+                    _buildHeaderButton(
+                      icon: Icons.chat_rounded,
+                      onTap: () async {
+                        final auth = context.read<AuthProvider>();
+                        final prefs = await SharedPreferences.getInstance();
+                        final token = prefs.getString('access_token');
+                        if (token == null) return;
+                        if (!context.mounted) return;
+                        
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ChatScreen(
+                              chamadoId: widget.chamadoId,
+                              meuId: auth.profissionalId ?? '',
+                              meuTipo: 'profissional',
+                              token: token,
+                              apiUrl: Env.baseUrl,
+                            ),
+                          ),
+                        );
+                      },
+                      color: AppColors.primary,
                     ),
                     const SizedBox(width: 12),
                     // GPS button

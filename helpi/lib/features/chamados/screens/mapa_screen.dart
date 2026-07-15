@@ -11,8 +11,11 @@ import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/theme/map_style.dart';
+import '../../../core/config/env.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../providers/chamados_provider.dart';
 import '../../pagamentos/screens/checkout_screen.dart';
+import 'chat_screen.dart';
 
 class MapaScreen extends StatelessWidget {
   const MapaScreen({super.key});
@@ -1308,6 +1311,39 @@ class _MapaScreenViewState extends State<MapaScreenView>
                             ],
                           ),
                         ],
+                      ),
+                    ),
+                    // Botão de Chat
+                    GestureDetector(
+                      onTap: () async {
+                        final auth = context.read<AuthProvider>();
+                        final token = await const FlutterSecureStorage().read(key: 'access_token');
+                        if (token == null || provider.idChamadoAtual == null) return;
+                        if (!context.mounted) return;
+                        
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ChatScreen(
+                              chamadoId: provider.idChamadoAtual!,
+                              meuId: auth.userId ?? '',
+                              meuTipo: 'cliente',
+                              token: token,
+                              apiUrl: Env.baseUrl,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        margin: const EdgeInsets.only(right: 8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: const Icon(Icons.chat_rounded,
+                            color: AppColors.primary, size: 20),
                       ),
                     ),
                     // Contact button

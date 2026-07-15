@@ -174,6 +174,40 @@ io.on('connection', (socket) => {
         }
     });
 
+    // --- NOVO: CHAT EM TEMPO REAL ---
+    socket.on('join_chat', (dados) => {
+        const { chamado_id } = dados;
+        if (chamado_id) {
+            const sala = `chat_${chamado_id}`;
+            socket.join(sala);
+            logger.info(`[CHAT] Usuário (id: ${socket.decoded?.id}) entrou na sala ${sala}`);
+        }
+    });
+
+    socket.on('enviar_mensagem', async (dados) => {
+        try {
+            const { chamado_id, texto } = dados;
+            if (!chamado_id || !texto || !socket.decoded) return;
+
+            const remetente_id = socket.decoded.id;
+            const tipo_remetente = socket.decoded.tipo; // 'cliente' ou 'profissional'
+
+            // Gravar na DB
+            const query = `
+                INSERT INTO mensagens_chat (chamado_id, remetente_id, tipo_remetente, texto)
+                VALUES ($1, $2, $3, $4) RETURNING *
+            `;
+            const { rows } = await pool.query(query, [chamado_id, remetente_id, tipo_remetente, texto]);
+            const novaMensagem = rows[0];
+
+            // io.to envia para todos na sala, incluindo o remetente
+            io.to(`chat_${chamado_id}`).emit('nova_mensagem', novaMensagem);
+
+        } catch (error) {
+            logger.error(`[CHAT] ERRO ao enviar mensagem: ${error.message}`);
+        }
+    });
+
     // Quando o trabalhador fechar a app, ficar sem internet ou clicar "Ficar Offline"
     socket.on('disconnect', async () => {
         for (let [id, socketId] of profissionaisConectados.entries()) {
