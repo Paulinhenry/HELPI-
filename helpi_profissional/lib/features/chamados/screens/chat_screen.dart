@@ -64,11 +64,13 @@ class _ChatScreenState extends State<ChatScreen> {
   void _conectarSocket() {
     String serverUrl = widget.apiUrl.replaceAll('/api/v1', '').replaceAll('/api', '');
     
-    socket = io.io(serverUrl, <String, dynamic>{
-      'transports': ['websocket'],
-      'autoConnect': false,
-      'auth': {'token': widget.token},
-    });
+    socket = io.io(serverUrl, io.OptionBuilder()
+      .setTransports(['websocket'])
+      .setAuth({'token': widget.token})
+      .setExtraHeaders({'Authorization': 'Bearer ${widget.token}'})
+      .disableAutoConnect()
+      .build()
+    );
 
     socket.connect();
 

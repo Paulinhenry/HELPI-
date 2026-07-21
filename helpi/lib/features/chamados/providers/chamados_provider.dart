@@ -140,6 +140,13 @@ class ChamadosProvider with ChangeNotifier {
           
           SocketService().ouvirAtualizacoesChamado(_onAtualizacaoChamado);
           SocketService().ouvirLocalizacaoProfissional(_onLocalizacaoProfissional);
+        } else if (status == 'finalizado') {
+          final pgStatus = ativo['pagamento_status'];
+          if (pgStatus == 'pendente' || pgStatus == null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              onServicoFinalizado?.call(ativo);
+            });
+          }
         }
         notifyListeners();
       }

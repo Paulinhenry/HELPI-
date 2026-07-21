@@ -1302,10 +1302,14 @@ class _MapaScreenViewState extends State<MapaScreenView>
                               const Icon(Icons.navigation_rounded,
                                   color: AppColors.primary, size: 14),
                               const SizedBox(width: 4),
-                              Text(
-                                provider.distanciaProfissional,
-                                style: AppTextStyles.labelM.copyWith(
-                                  color: AppColors.primary,
+                              Expanded(
+                                child: Text(
+                                  provider.distanciaProfissional,
+                                  style: AppTextStyles.labelM.copyWith(
+                                    color: AppColors.primary,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -1319,7 +1323,7 @@ class _MapaScreenViewState extends State<MapaScreenView>
                         final auth = context.read<AuthProvider>();
                         final token = await const FlutterSecureStorage().read(key: 'access_token');
                         if (token == null || provider.idChamadoAtual == null) return;
-                        if (!context.mounted) return;
+                        if (!mounted) return;
                         
                         Navigator.push(
                           context,

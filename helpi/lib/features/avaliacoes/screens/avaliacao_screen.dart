@@ -74,8 +74,10 @@ class _AvaliacaoScreenState extends State<AvaliacaoScreen> {
     setState(() => _enviando = true);
 
     try {
+      final chamadoId = widget.data['id'] ?? widget.data['chamado_id'] ?? Provider.of<ChamadosProvider>(context, listen: false).idChamadoAtual;
+      
       await _avaliacaoService.enviarAvaliacaoCliente(
-        chamadoId: widget.data['chamado_id'],
+        chamadoId: chamadoId,
         nota: _notaSelecionada,
         tags: _tagsSelecionadas,
         comentario: _comentarioController.text.trim(),
@@ -104,6 +106,14 @@ class _AvaliacaoScreenState extends State<AvaliacaoScreen> {
     } catch (e) {
       setState(() => _enviando = false);
       if (mounted) {
+        if (e.toString().toLowerCase().contains('já avaliou')) {
+          Provider.of<ChamadosProvider>(context, listen: false).resetarEstado();
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const MapaScreen()),
+            (route) => false,
+          );
+          return;
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
         );
