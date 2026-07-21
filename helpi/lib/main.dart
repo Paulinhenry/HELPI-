@@ -20,15 +20,17 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
 
-  // Inicializa o Firebase (obrigatório antes de usar FCM)
-  await Firebase.initializeApp();
-
-  // Regista o handler de background (obrigatório ser top-level function)
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-
-  // Inicializa push notifications do cliente
-  final pushService = PushNotificationService();
-  await pushService.inicializar();
+  try {
+    // Inicializa o Firebase (obrigatório antes de usar FCM)
+    await Firebase.initializeApp();
+    // Regista o handler de background (obrigatório ser top-level function)
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    // Inicializa push notifications do cliente
+    final pushService = PushNotificationService();
+    await pushService.inicializar();
+  } catch (e) {
+    debugPrint('Erro ao inicializar Firebase: $e');
+  }
 
   // Immersive status bar
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(

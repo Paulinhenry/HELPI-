@@ -81,7 +81,7 @@ const verProfissional = async (req, res, next) => {
         const avaliacoes = await pool.query(
             `SELECT nota, comentario, criado_em
              FROM avaliacoes
-             WHERE profissional_id = $1
+             WHERE avaliado_id = $1 AND avaliado_tipo = 'profissional'
              ORDER BY criado_em DESC
              LIMIT 10`,
             [id]

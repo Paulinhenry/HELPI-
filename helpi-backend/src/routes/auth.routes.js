@@ -14,7 +14,7 @@ const { validarLogin } = require('../middlewares/validators/loginValidator');
 // Rate limiter para proteção contra brute-force (5 tentativas por 15 minutos)
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutos
-    max: 5,
+    max: process.env.NODE_ENV === 'test' ? 1000 : 5,
     standardHeaders: true,
     legacyHeaders: false,
     message: {

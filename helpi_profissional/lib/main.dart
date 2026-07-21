@@ -22,11 +22,14 @@ import 'features/pagamentos/screens/pagamento_confirmado_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializa o Firebase (obrigatório antes de usar FCM)
-  await Firebase.initializeApp();
-
-  // Regista o handler de background (obrigatório ser top-level function)
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  try {
+    // Inicializa o Firebase (obrigatório antes de usar FCM)
+    await Firebase.initializeApp();
+    // Regista o handler de background (obrigatório ser top-level function)
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  } catch (e) {
+    debugPrint('Erro ao inicializar Firebase: $e');
+  }
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
