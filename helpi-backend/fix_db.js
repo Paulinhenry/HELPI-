@@ -1,10 +1,11 @@
-const knex = require('knex')(require('./knexfile').development);
+const env = process.env.NODE_ENV || 'development';
+const knex = require('knex')(require('./knexfile')[env]);
 
 async function up() {
   const hasTable = await knex.schema.hasTable('mensagens_chat');
   if (!hasTable) {
     await knex.schema.createTable('mensagens_chat', (table) => {
-      table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v4()'));
+      table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
       table.uuid('chamado_id').notNullable().references('id').inTable('chamados_express').onDelete('CASCADE');
       
       table.uuid('remetente_id').notNullable();
