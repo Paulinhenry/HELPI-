@@ -11,6 +11,21 @@ jobs:
     name: Backend Tests (Node.js)
     runs-on: ubuntu-latest
     
+    services:
+      postgres:
+        image: postgis/postgis:15-3.3
+        env:
+          POSTGRES_USER: helpi_user
+          POSTGRES_PASSWORD: senha_segura
+          POSTGRES_DB: helpi_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout Código
         uses: actions/checkout@v4
@@ -24,18 +39,33 @@ jobs:
           
       - name: Instalar Dependências (Backend)
         working-directory: ./helpi-backend
-        run: npm install
+        run: npm ci
         
+      - name: Run DB Setup Scripts
+        working-directory: ./helpi-backend
+        env:
+          DATABASE_URL: postgresql://helpi_user:senha_segura@localhost:5432/helpi_db?sslmode=disable
+        run: |
+          node src/scripts/initDb.js
+          node src/scripts/initDbexpress.js
+          node src/scripts/initDbavaliacoes.js
+          node src/scripts/atualizar_avaliacoes.js
+          node src/scripts/upgradePostGIS.js
+          node src/scripts/migrateSoftDeleteAndIndexes.js
+          node fix_db.js
+
       - name: Executar Testes Unitários
         working-directory: ./helpi-backend
         env:
+          DATABASE_URL: postgresql://helpi_user:senha_segura@localhost:5432/helpi_db?sslmode=disable
+          DB_SSL: false
           JWT_SECRET: key_super_secreta_para_github_actions
+          JWT_REFRESH_SECRET: key_refresh_secreta_para_github_actions
           PORT: 3000
           NODE_ENV: test
           MP_ACCESS_TOKEN: dummy-access-token-github-actions
           MP_PUBLIC_KEY: dummy-public-key
           MP_WEBHOOK_SECRET: dummy-webhook-secret
-        # Rodamos apenas testes unitários porque os de integração exigem base de dados e não há migrações no projeto
         run: npm run test:unit
 
   flutter-cliente:
