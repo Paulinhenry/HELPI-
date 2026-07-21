@@ -81,7 +81,7 @@ const verProfissional = async (req, res, next) => {
         const avaliacoes = await pool.query(
             `SELECT nota, comentario, criado_em
              FROM avaliacoes
-             WHERE profissional_id = $1
+             WHERE avaliado_id = $1 AND avaliado_tipo = 'profissional'
              ORDER BY criado_em DESC
              LIMIT 10`,
             [id]
@@ -165,4 +165,40 @@ const atualizarPerfil = async (req, res, next) => {
     }
 };
 
-module.exports = { listarProfissionais, verProfissional, registarProfissional, atualizarPerfil };
+// ─── REGISTAR/ATUALIZAR TOKEN FCM ───────────────────────────
+// Chamado pelo app Flutter após login ou quando o token renova.
+// Guarda o token FCM na DB para o pushNotificationService usar.
+const atualizarFcmToken = async (req, res, next) => {
+    try {
+        const usuario_id = req.usuario.id;
+        const usuario_tipo = req.usuario.tipo; // 'profissional' ou 'cliente'
+        const { fcm_token } = req.body;
+
+        if (!fcm_token || typeof fcm_token !== 'string' || fcm_token.trim().length === 0) {
+            return res.status(400).json({ erro: 'Token FCM é obrigatório.' });
+        }
+
+        // SEGURANÇA: Whitelist de tabelas (previne SQL injection via JWT comprometido)
+        let tabela;
+        if (usuario_tipo === 'profissional') {
+            tabela = 'profissionais';
+        } else if (usuario_tipo === 'cliente') {
+            tabela = 'clientes';
+        } else {
+            return res.status(400).json({ erro: 'Tipo de utilizador inválido.' });
+        }
+
+        await pool.query(
+            `UPDATE ${tabela} SET fcm_token = $1 WHERE id = $2`,
+            [fcm_token.trim(), usuario_id]
+        );
+
+        logger.info(`[FCM] TOKEN_REGISTADO: ${usuario_tipo} ${usuario_id} registou token FCM`);
+
+        res.json({ mensagem: 'Token FCM registado com sucesso.' });
+    } catch (erro) {
+        next(erro);
+    }
+};
+
+module.exports = { listarProfissionais, verProfissional, registarProfissional, atualizarPerfil, atualizarFcmToken };

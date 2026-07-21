@@ -23,12 +23,14 @@ const executarMigration = async () => {
 
         await cliente.query(`
             ALTER TABLE clientes
+            ADD COLUMN IF NOT EXISTS fcm_token TEXT DEFAULT NULL,
             ADD COLUMN IF NOT EXISTS deletado_em TIMESTAMP WITH TIME ZONE DEFAULT NULL,
             ADD COLUMN IF NOT EXISTS atualizado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
         `);
 
         await cliente.query(`
             ALTER TABLE profissionais
+            ADD COLUMN IF NOT EXISTS fcm_token TEXT DEFAULT NULL,
             ADD COLUMN IF NOT EXISTS deletado_em TIMESTAMP WITH TIME ZONE DEFAULT NULL,
             ADD COLUMN IF NOT EXISTS atualizado_em TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
         `);

@@ -3,11 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 // Core
 import 'core/providers/auth_provider.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
+import 'core/services/push_notification_service.dart';
 
 // Features
 import 'features/auth/screens/login_screen.dart';
@@ -16,6 +19,18 @@ import 'features/chamados/screens/mapa_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+
+  try {
+    // Inicializa o Firebase (obrigatório antes de usar FCM)
+    await Firebase.initializeApp();
+    // Regista o handler de background (obrigatório ser top-level function)
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    // Inicializa push notifications do cliente
+    final pushService = PushNotificationService();
+    await pushService.inicializar();
+  } catch (e) {
+    debugPrint('Erro ao inicializar Firebase: $e');
+  }
 
   // Immersive status bar
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(

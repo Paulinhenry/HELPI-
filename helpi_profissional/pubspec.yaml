@@ -52,6 +52,9 @@ dependencies:
   flutter_map_cancellable_tile_provider: ^3.0.2
   google_fonts: ^6.2.1
   intl: ^0.19.0
+  # Firebase: Push Notifications (Despertador Infalível)
+  firebase_core: ^4.12.1
+  firebase_messaging: ^16.4.3
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -62,6 +65,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  mocktail: ^1.0.5
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

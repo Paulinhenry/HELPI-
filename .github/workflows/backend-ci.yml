@@ -67,6 +67,7 @@ jobs:
         node src/scripts/atualizar_avaliacoes.js
         node src/scripts/upgradePostGIS.js
         node src/scripts/migrateSoftDeleteAndIndexes.js
+        node fix_db.js
 
     - name: Run tests
       run: npm run test:all
