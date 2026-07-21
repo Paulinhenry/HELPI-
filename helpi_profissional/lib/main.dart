@@ -5,6 +5,8 @@ import 'package:vibration/vibration.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'core/providers/auth_provider.dart';
 import 'core/theme/app_colors.dart';
@@ -14,10 +16,17 @@ import 'features/auth/screens/login_screen.dart';
 import 'features/chamados/screens/mapa_rota_screen.dart';
 import 'services/chamado_service.dart';
 import 'services/socket_service.dart';
+import 'services/push_notification_service.dart';
 import 'features/pagamentos/screens/pagamento_confirmado_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializa o Firebase (obrigatório antes de usar FCM)
+  await Firebase.initializeApp();
+
+  // Regista o handler de background (obrigatório ser top-level function)
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
@@ -89,6 +98,7 @@ class RadarScreen extends StatefulWidget {
 class _RadarScreenState extends State<RadarScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final SocketService _socketService = SocketService();
+  final PushNotificationService _pushService = PushNotificationService();
   bool _isOnline = false;
   int _chamadosHoje = 0;
   double _ganhosDia = 0.0;
@@ -103,6 +113,15 @@ class _RadarScreenState extends State<RadarScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     );
+
+    // Inicializa push notifications e conecta o callback
+    _inicializarPush();
+  }
+
+  Future<void> _inicializarPush() async {
+    await _pushService.inicializar();
+    // Conecta o handler de foreground ao mesmo método que o Socket.IO usa
+    _pushService.onNovoChamadoForeground = _mostrarAlertaDeTrabalho;
   }
 
   @override
@@ -160,6 +179,10 @@ class _RadarScreenState extends State<RadarScreen>
   }
 
   void _mostrarAlertaDeTrabalho(Map<String, dynamic> dados) async {
+    // Deduplicação: marca o chamado como recebido para o push service não duplicar
+    final chamadoId = dados['chamado_id']?.toString() ?? '';
+    _pushService.marcarChamadoRecebido(chamadoId);
+
     // Feedback sensorial
     FlutterRingtonePlayer().playAlarm();
     HapticFeedback.heavyImpact();
@@ -169,8 +192,6 @@ class _RadarScreenState extends State<RadarScreen>
     }
 
     if (!mounted) return;
-
-    final chamadoId = dados['chamado_id']?.toString() ?? '';
 
     // Premium bottom sheet em vez de AlertDialog
     showModalBottomSheet(

@@ -4,6 +4,11 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const logger = require('./utils/logger');
 const { TAXA_DESLOCAMENTO } = require('./utils/constants');
+const { inicializarFirebase } = require('./config/firebase');
+const { enviarPushNovoChamado } = require('./utils/pushNotificationService');
+
+// Inicializa o Firebase Admin SDK (push notifications)
+inicializarFirebase();
 
 const PORT = process.env.PORT || 3000;
 

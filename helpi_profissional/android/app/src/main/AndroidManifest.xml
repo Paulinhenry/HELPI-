@@ -2,11 +2,28 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- FCM: Permissão para push notifications (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- FCM: Manter o dispositivo acordado para processar notificações -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- FCM: Vibração para alertas de emergência -->
+    <uses-permission android:name="android.permission.VIBRATE" />
     
     <application
         android:label="helpi_profissional"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <!-- FCM: Canal de notificação padrão (emergência — som + vibração + heads-up) -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="chamado_emergencia" />
+
+        <!-- FCM: Ícone padrão das notificações -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@mipmap/ic_launcher" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

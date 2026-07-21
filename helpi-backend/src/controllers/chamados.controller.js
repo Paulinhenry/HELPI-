@@ -14,6 +14,7 @@ const logger = require('../utils/logger');
 const { AppError } = require('../middlewares/errorHandler');
 const { TAXA_DESLOCAMENTO, MAPA_CATEGORIAS } = require('../utils/constants');
 const { analisarProblema } = require('../utils/precificador');
+const { enviarPushParaMultiplos, enviarPushAtualizacaoChamado } = require('../utils/pushNotificationService');
 
 // ─── CRIAR CHAMADO ──────────────────────────────────────────
 const criarChamado = async (req, res, next) => {
@@ -49,15 +50,16 @@ const criarChamado = async (req, res, next) => {
 
         // ── POSTIGS: Busca espacial com índice GiST (O(log n)) ──
         // ST_DWithin usa o índice GIST automaticamente (vs Haversine que faz full table scan)
+        // NOTA: Agora inclui fcm_token E remove filtro is_online para também
+        // encontrar profissionais OFFLINE (que receberão push notification)
         const queryProfissionaisProximos = `
-            SELECT id, nome,
+            SELECT id, nome, is_online, fcm_token,
                 ST_Distance(
                     coordenadas,
                     ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography
                 ) / 1000 AS distancia_km
             FROM profissionais
-            WHERE is_online = true
-              AND LOWER(categoria) = LOWER($3)
+            WHERE LOWER(categoria) = LOWER($3)
               AND status = 'aprovado'
               AND coordenadas IS NOT NULL
               AND ST_DWithin(
@@ -66,7 +68,7 @@ const criarChamado = async (req, res, next) => {
                     10000
               )
             ORDER BY coordenadas <-> ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography
-            LIMIT 5
+            LIMIT 10
         `;
 
         const busca = await client.query(queryProfissionaisProximos, [
@@ -97,40 +99,55 @@ const criarChamado = async (req, res, next) => {
             });
         }
 
-        // --- COMEÇA AQUI O NOVO CÓDIGO DA SIRENE ---
+        // --- COMEÇA AQUI O CÓDIGO DA SIRENE ---
 
-        // 3. A SIRENE DIGITAL (WEBSOCKETS)
+        // 3. A SIRENE DIGITAL — CANAL 1: WEBSOCKETS (app aberta)
         const io = req.app.get('io');
         const profissionaisConectados = req.app.get('profissionaisConectados');
-        let profissionaisNotificados = 0;
+        let profissionaisNotificadosSocket = 0;
+
+        // Prepara o payload uma vez para reutilizar
+        const payloadChamado = {
+            chamado_id: novoChamado.rows[0].id,
+            categoria: categoria_solicitada,
+            descricao: problema_descricao.substring(0, 500),
+            valor_sugerido: estimativa.preco_sugerido * 0.90,
+            valor_estimado_min: estimativa.preco_minimo * 0.90,
+            valor_estimado_max: estimativa.preco_maximo * 0.90,
+        };
 
         if (io && profissionaisConectados) {
-            // Percorre todos os profissionais que o PostGIS encontrou num raio de 10km
             busca.rows.forEach(profissional => {
-                // Verifica se este profissional específico está com a app aberta (online)
                 const socketId = profissionaisConectados.get(profissional.id);
                 
                 if (socketId) {
-                    // Dispara a notificação de emergência diretamente para o telemóvel dele
                     io.to(socketId).emit('novo_chamado_emergencia', {
-                        chamado_id: novoChamado.rows[0].id,
-                        categoria: categoria_solicitada,
-                        // SEGURANÇA: Truncado a 500 chars para evitar payload gigante via WebSocket
-                        descricao: problema_descricao.substring(0, 500),
-                        distancia_metros: Math.round(profissional.distancia_km * 1000), 
-                        // Mostra o valor COM DESCONTO de 10% da plataforma para o profissional
-                        valor_sugerido: estimativa.preco_sugerido * 0.90, 
-                        valor_estimado_min: estimativa.preco_minimo * 0.90,
-                        valor_estimado_max: estimativa.preco_maximo * 0.90
-                        // 🔒 Segurança: Não enviamos a morada exata nem as coordenadas 
-                        // do cliente até o profissional aceitar o serviço!
+                        ...payloadChamado,
+                        distancia_metros: Math.round(profissional.distancia_km * 1000),
                     });
-                    profissionaisNotificados++;
+                    profissionaisNotificadosSocket++;
                 }
             });
         }
 
-        logger.info(`[CHAMADO] CRIADO: chamado ${novoChamado.rows[0].id} por cliente ${cliente_id} | categoria: ${categoria_solicitada} | profissionais_no_raio: ${busca.rows.length} | notificados: ${profissionaisNotificados}`);
+        // 4. A SIRENE DIGITAL — CANAL 2: PUSH NOTIFICATION (app fechada/background)
+        // Dispara FCM para TODOS os profissionais no raio que tenham token FCM.
+        // Se o profissional já recebeu via Socket.IO, a app Flutter ignora a duplicata.
+        let profissionaisNotificadosPush = 0;
+        try {
+            profissionaisNotificadosPush = await enviarPushParaMultiplos(
+                busca.rows,
+                {
+                    ...payloadChamado,
+                    distancia_metros: Math.round((busca.rows[0]?.distancia_km || 0) * 1000),
+                }
+            );
+        } catch (pushError) {
+            // Push é best-effort: se falhar, o Socket.IO já tratou os que estão online
+            logger.error(`[CHAMADO] ERRO_PUSH: falha ao enviar push notifications`, { error: pushError.message });
+        }
+
+        logger.info(`[CHAMADO] CRIADO: chamado ${novoChamado.rows[0].id} por cliente ${cliente_id} | categoria: ${categoria_solicitada} | no_raio: ${busca.rows.length} | socket: ${profissionaisNotificadosSocket} | push: ${profissionaisNotificadosPush}`);
 
         return res.status(201).json({
             mensagem: "Emergência disparada! Profissionais notificados.",
@@ -141,10 +158,11 @@ const criarChamado = async (req, res, next) => {
                 sugerido: estimativa.preco_sugerido
             },
             profissionais_encontrados_no_raio: busca.rows.length,
-            profissionais_online_notificados: profissionaisNotificados
+            profissionais_notificados_socket: profissionaisNotificadosSocket,
+            profissionais_notificados_push: profissionaisNotificadosPush
         });
         
-        // --- TERMINA AQUI O NOVO CÓDIGO ---
+        // --- TERMINA AQUI O CÓDIGO DA SIRENE ---
     } catch (erro) {
         await client.query('ROLLBACK').catch(() => {});
         next(erro);
@@ -233,6 +251,24 @@ const aceitarChamado = async (req, res, next) => {
             });
         }
 
+        // FCM Push: Notifica o cliente mesmo que a app esteja em background
+        try {
+            const clienteFcm = await client.query(
+                'SELECT fcm_token FROM clientes WHERE id = $1',
+                [atualizacao.rows[0].cliente_id]
+            );
+            if (clienteFcm.rows[0]?.fcm_token) {
+                await enviarPushAtualizacaoChamado(clienteFcm.rows[0].fcm_token, {
+                    chamado_id: id,
+                    status_novo: 'a_caminho',
+                    titulo: '🎉 Profissional a caminho!',
+                    mensagem: `${profissional_nome} aceitou e está a ${distancia_texto}!`,
+                });
+            }
+        } catch (pushErr) {
+            logger.error(`[FCM] ERRO_PUSH_ACEITAR: ${pushErr.message}`);
+        }
+
         // WebSocket: notifica TODOS os outros profissionais que este chamado já foi aceite
         // Isto faz o popup de "NOVO SERVIÇO" desaparecer nos telemóveis dos que perderam
         const profissionaisConectados = req.app.get('profissionaisConectados');
@@ -308,6 +344,24 @@ const registrarChegada = async (req, res, next) => {
                 status_novo: 'em_servico',
                 mensagem: "O profissional chegou ao local!"
             });
+        }
+
+        // FCM Push: Notifica o cliente que o profissional chegou
+        try {
+            const clienteFcm = await pool.query(
+                'SELECT fcm_token FROM clientes WHERE id = $1',
+                [atualizacao.rows[0].cliente_id]
+            );
+            if (clienteFcm.rows[0]?.fcm_token) {
+                await enviarPushAtualizacaoChamado(clienteFcm.rows[0].fcm_token, {
+                    chamado_id: id,
+                    status_novo: 'em_servico',
+                    titulo: '📍 O profissional chegou!',
+                    mensagem: 'O profissional chegou ao local. O serviço vai começar!',
+                });
+            }
+        } catch (pushErr) {
+            logger.error(`[FCM] ERRO_PUSH_CHEGADA: ${pushErr.message}`);
         }
 
         logger.info(`[CHAMADO] CHEGADA: profissional ${profissional_id} chegou ao local do chamado ${id} | status: em_servico`);
@@ -395,6 +449,24 @@ const finalizarChamado = async (req, res, next) => {
                 categoria: atualizacao.rows[0].categoria_solicitada,
                 descricao: atualizacao.rows[0].problema_descricao
             });
+        }
+
+        // FCM Push: Notifica o cliente que o serviço foi finalizado
+        try {
+            const clienteFcm = await pool.query(
+                'SELECT fcm_token FROM clientes WHERE id = $1',
+                [atualizacao.rows[0].cliente_id]
+            );
+            if (clienteFcm.rows[0]?.fcm_token) {
+                await enviarPushAtualizacaoChamado(clienteFcm.rows[0].fcm_token, {
+                    chamado_id: id,
+                    status_novo: 'finalizado',
+                    titulo: '✅ Serviço finalizado!',
+                    mensagem: `Serviço finalizado — R$ ${atualizacao.rows[0].valor_cobrado}. Avalie o profissional!`,
+                });
+            }
+        } catch (pushErr) {
+            logger.error(`[FCM] ERRO_PUSH_FINALIZAR: ${pushErr.message}`);
         }
 
         logger.info(`[CHAMADO] FINALIZADO: chamado ${id} finalizado pelo profissional ${profissional_id} | status: finalizado`);

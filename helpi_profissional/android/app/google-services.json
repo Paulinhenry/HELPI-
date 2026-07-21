@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "634195470119",
+    "project_id": "helpi-4722d",
+    "storage_bucket": "helpi-4722d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:634195470119:android:ff899f61a6eeeb33d42b02",
+        "android_client_info": {
+          "package_name": "com.HELPI.Helpi_profissional"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyChY11q6rjvT5DhI5WOfIRvfziURlGfpjM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
