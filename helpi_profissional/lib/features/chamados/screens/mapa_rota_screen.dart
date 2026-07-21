@@ -885,7 +885,7 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
                         final prefs = await SharedPreferences.getInstance();
                         final token = prefs.getString('access_token');
                         if (token == null) return;
-                        if (!context.mounted) return;
+                        if (!mounted) return;
                         
                         Navigator.push(
                           context,
@@ -1028,7 +1028,7 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
                       // GPS button
                       _buildActionButton(
                         icon: Icons.directions_rounded,
-                        label: 'ABRIR GPS',
+                        label: 'GPS',
                         isOutlined: true,
                         onTap: _abrirNavegacaoExterna,
                         flex: 1,

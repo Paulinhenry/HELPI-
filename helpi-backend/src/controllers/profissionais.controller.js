@@ -200,5 +200,34 @@ const atualizarFcmToken = async (req, res, next) => {
         next(erro);
     }
 };
+// ─── DASHBOARD PROFISSIONAL ─────────────────────────────────
+const obterDashboard = async (req, res, next) => {
+    try {
+        const profissional_id = req.usuario.id;
 
-module.exports = { listarProfissionais, verProfissional, registarProfissional, atualizarPerfil, atualizarFcmToken };
+        // Hoje no fuso horário local ou UTC (depende da configuração do DB)
+        // Para simplificar, usamos a data atual do banco.
+        const query = `
+            SELECT 
+                COUNT(id) as chamados_hoje,
+                COALESCE(SUM(valor_cobrado), 0) as ganhos_hoje
+            FROM chamados_express 
+            WHERE profissional_id = $1 
+              AND status = 'finalizado'
+              AND DATE(criado_em AT TIME ZONE 'UTC') = CURRENT_DATE
+        `;
+        
+        const result = await pool.query(query, [profissional_id]);
+        
+        const dashboard = {
+            chamados_hoje: parseInt(result.rows[0].chamados_hoje) || 0,
+            ganhos_hoje: parseFloat(result.rows[0].ganhos_hoje) || 0.0
+        };
+
+        res.json(dashboard);
+    } catch (erro) {
+        next(erro);
+    }
+};
+
+module.exports = { listarProfissionais, verProfissional, registarProfissional, atualizarPerfil, atualizarFcmToken, obterDashboard };

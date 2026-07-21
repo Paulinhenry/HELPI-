@@ -130,6 +130,7 @@ const authGeral = require('../middlewares/authGeral');
 router.get('/', profissionaisController.listarProfissionais);
 router.post('/', validarCadastroProfissional, profissionaisController.registarProfissional);
 router.put('/perfil', authProfissional, profissionaisController.atualizarPerfil);
+router.get('/dashboard/me', authProfissional, profissionaisController.obterDashboard);
 // FCM: Rota para registar/atualizar token de push notifications
 // Usa authGeral porque tanto profissionais como clientes precisam registar token
 router.put('/fcm-token', authGeral, profissionaisController.atualizarFcmToken);

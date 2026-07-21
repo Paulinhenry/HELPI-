@@ -138,11 +138,9 @@ describe('👷 Profissionais — CRUD Completo', () => {
     describe('PUT /api/profissionais/perfil (Atualizar)', () => {
 
         it('deve atualizar perfil com campos válidos (200)', async () => {
-            // Precisa de profissional aprovado com token
-            const aprovado = await pool.query(`SELECT id FROM profissionais WHERE status = 'aprovado' LIMIT 1`);
-            if (aprovado.rows.length === 0) return;
-
-            tokenProfissional = gerarTokenProfissional(aprovado.rows[0].id);
+            // Usa o profissional de teste que foi criado acima e aprova-o
+            await pool.query(`UPDATE profissionais SET status = 'aprovado' WHERE id = $1`, [profissionalTesteId]);
+            tokenProfissional = gerarTokenProfissional(profissionalTesteId);
 
             const res = await request(app)
                 .put('/api/profissionais/perfil')
@@ -154,10 +152,7 @@ describe('👷 Profissionais — CRUD Completo', () => {
         });
 
         it('deve rejeitar atualização sem campos (400)', async () => {
-            const aprovado = await pool.query(`SELECT id FROM profissionais WHERE status = 'aprovado' LIMIT 1`);
-            if (aprovado.rows.length === 0) return;
-
-            tokenProfissional = gerarTokenProfissional(aprovado.rows[0].id);
+            tokenProfissional = gerarTokenProfissional(profissionalTesteId);
 
             const res = await request(app)
                 .put('/api/profissionais/perfil')

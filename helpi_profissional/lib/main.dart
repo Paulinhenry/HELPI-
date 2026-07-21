@@ -18,6 +18,7 @@ import 'services/chamado_service.dart';
 import 'services/socket_service.dart';
 import 'services/push_notification_service.dart';
 import 'features/pagamentos/screens/pagamento_confirmado_screen.dart';
+import 'core/network/app_client.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -103,6 +104,7 @@ class _RadarScreenState extends State<RadarScreen>
   final SocketService _socketService = SocketService();
   final PushNotificationService _pushService = PushNotificationService();
   bool _isOnline = false;
+  bool _isAlertShowing = false;
   int _chamadosHoje = 0;
   double _ganhosDia = 0.0;
 
@@ -119,12 +121,27 @@ class _RadarScreenState extends State<RadarScreen>
 
     // Inicializa push notifications e conecta o callback
     _inicializarPush();
+    _carregarDashboard();
   }
 
   Future<void> _inicializarPush() async {
     await _pushService.inicializar();
     // Conecta o handler de foreground ao mesmo método que o Socket.IO usa
     _pushService.onNovoChamadoForeground = _mostrarAlertaDeTrabalho;
+  }
+
+  Future<void> _carregarDashboard() async {
+    try {
+      final response = await ApiClient().dio.get('/profissionais/dashboard/me');
+      if (mounted) {
+        setState(() {
+          _chamadosHoje = response.data['chamados_hoje'] ?? 0;
+          _ganhosDia = (response.data['ganhos_hoje'] ?? 0.0).toDouble();
+        });
+      }
+    } catch (e) {
+      debugPrint('Erro ao carregar dashboard: $e');
+    }
   }
 
   @override
@@ -136,12 +153,15 @@ class _RadarScreenState extends State<RadarScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _isOnline && mounted) {
-      _socketService.ligarRadar(
-        widget.profissionalId,
-        _mostrarAlertaDeTrabalho,
-        onPagamentoConfirmado: (dados) {},
-      );
+    if (state == AppLifecycleState.resumed) {
+      _carregarDashboard();
+      if (_isOnline && mounted) {
+        _socketService.ligarRadar(
+          widget.profissionalId,
+          _mostrarAlertaDeTrabalho,
+          onPagamentoConfirmado: (dados) {},
+        );
+      }
     }
   }
 
@@ -186,6 +206,9 @@ class _RadarScreenState extends State<RadarScreen>
     final chamadoId = dados['chamado_id']?.toString() ?? '';
     _pushService.marcarChamadoRecebido(chamadoId);
 
+    if (!mounted || _isAlertShowing) return;
+    setState(() => _isAlertShowing = true);
+
     // Feedback sensorial
     FlutterRingtonePlayer().playAlarm();
     HapticFeedback.heavyImpact();
@@ -194,10 +217,13 @@ class _RadarScreenState extends State<RadarScreen>
       Vibration.vibrate(pattern: [0, 400, 200, 400, 200, 400]);
     }
 
-    if (!mounted) return;
+    if (!mounted) {
+      _isAlertShowing = false;
+      return;
+    }
 
     // Premium bottom sheet em vez de AlertDialog
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       isDismissible: false,
       enableDrag: false,
@@ -206,6 +232,10 @@ class _RadarScreenState extends State<RadarScreen>
       builder: (dialogContext) =>
           _buildAlertaSheet(dialogContext, dados, chamadoId),
     );
+
+    if (mounted) {
+      setState(() => _isAlertShowing = false);
+    }
   }
 
   Widget _buildAlertaSheet(
