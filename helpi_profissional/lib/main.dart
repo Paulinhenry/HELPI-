@@ -7,6 +7,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
 import 'core/providers/auth_provider.dart';
 import 'core/theme/app_colors.dart';
@@ -17,11 +18,13 @@ import 'features/chamados/screens/mapa_rota_screen.dart';
 import 'services/chamado_service.dart';
 import 'services/socket_service.dart';
 import 'services/push_notification_service.dart';
+import 'services/foreground_notification_service.dart';
 import 'features/pagamentos/screens/pagamento_confirmado_screen.dart';
 import 'core/network/app_client.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  FlutterForegroundTask.initCommunicationPort();
 
   try {
     // Inicializa o Firebase (obrigatório antes de usar FCM)
@@ -55,35 +58,37 @@ class HelpiProfissionalApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Helpi Profissional',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark,
-      home: Consumer<AuthProvider>(
-        builder: (context, auth, _) {
-          if (auth.isAuthenticated) {
-            if (auth.chamadoAtivo != null) {
-              final c = auth.chamadoAtivo!;
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                auth.limparChamadoAtivo();
-              });
-              return MapaRotaScreen(
-                chamadoId: c['id'].toString(),
-                latitudeDestino:
-                    double.parse(c['latitude_destino'].toString()),
-                longitudeDestino:
-                    double.parse(c['longitude_destino'].toString()),
-                categoria: c['categoria_solicitada'] ?? '',
-                descricao: c['problema_descricao'] ?? '',
-                clienteId: c['cliente_id']?.toString(),
-              );
+    return WithForegroundTask(
+      child: MaterialApp(
+        title: 'Helpi Profissional',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.darkTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.dark,
+        home: Consumer<AuthProvider>(
+          builder: (context, auth, _) {
+            if (auth.isAuthenticated) {
+              if (auth.chamadoAtivo != null) {
+                final c = auth.chamadoAtivo!;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  auth.limparChamadoAtivo();
+                });
+                return MapaRotaScreen(
+                  chamadoId: c['id'].toString(),
+                  latitudeDestino:
+                      double.parse(c['latitude_destino'].toString()),
+                  longitudeDestino:
+                      double.parse(c['longitude_destino'].toString()),
+                  categoria: c['categoria_solicitada'] ?? '',
+                  descricao: c['problema_descricao'] ?? '',
+                  clienteId: c['cliente_id']?.toString(),
+                );
+              }
+              return RadarScreen(profissionalId: auth.profissionalId!);
             }
-            return RadarScreen(profissionalId: auth.profissionalId!);
-          }
-          return const LoginScreen();
-        },
+            return const LoginScreen();
+          },
+        ),
       ),
     );
   }
@@ -103,6 +108,8 @@ class _RadarScreenState extends State<RadarScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final SocketService _socketService = SocketService();
   final PushNotificationService _pushService = PushNotificationService();
+  final ForegroundNotificationService _foregroundService =
+      ForegroundNotificationService();
   bool _isOnline = false;
   bool _isAlertShowing = false;
   int _chamadosHoje = 0;
@@ -179,6 +186,8 @@ class _RadarScreenState extends State<RadarScreen>
 
     if (_isOnline) {
       WakelockPlus.enable();
+      // Inicia notificação persistente "🟢 Online"
+      _foregroundService.iniciar();
       _socketService.ligarRadar(
         widget.profissionalId,
         _mostrarAlertaDeTrabalho,
@@ -197,6 +206,8 @@ class _RadarScreenState extends State<RadarScreen>
       );
     } else {
       WakelockPlus.disable();
+      // Para a notificação persistente
+      _foregroundService.parar();
       _socketService.desligarRadar();
     }
   }
@@ -205,6 +216,10 @@ class _RadarScreenState extends State<RadarScreen>
     // Deduplicação: marca o chamado como recebido para o push service não duplicar
     final chamadoId = dados['chamado_id']?.toString() ?? '';
     _pushService.marcarChamadoRecebido(chamadoId);
+
+    // Atualiza notificação persistente para mostrar novo chamado
+    final categoria = dados['categoria']?.toString() ?? 'Serviço';
+    _foregroundService.atualizarParaNovoChamado(categoria);
 
     if (!mounted || _isAlertShowing) return;
     setState(() => _isAlertShowing = true);
@@ -235,6 +250,8 @@ class _RadarScreenState extends State<RadarScreen>
 
     if (mounted) {
       setState(() => _isAlertShowing = false);
+      // Restaura notificação para status Online após fechar o alerta
+      _foregroundService.restaurarStatusOnline();
     }
   }
 

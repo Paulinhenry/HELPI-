@@ -8,6 +8,10 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- FCM: Vibração para alertas de emergência -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Foreground Service: Manter notificação persistente com status online -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     
     <application
         android:label="helpi_profissional"
@@ -23,6 +27,12 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@mipmap/ic_launcher" />
+
+        <!-- Foreground Service Plugin -->
+        <service 
+            android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
+            android:foregroundServiceType="location"
+            android:exported="false" />
 
         <activity
             android:name=".MainActivity"

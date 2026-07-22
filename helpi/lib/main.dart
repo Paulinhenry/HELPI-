@@ -11,6 +11,7 @@ import 'core/providers/auth_provider.dart';
 import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/services/push_notification_service.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
 // Features
 import 'features/auth/screens/login_screen.dart';
@@ -18,6 +19,7 @@ import 'features/chamados/screens/mapa_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  FlutterForegroundTask.initCommunicationPort();
   await dotenv.load(fileName: ".env");
 
   try {
@@ -58,22 +60,24 @@ class HelpiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Helpi',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: ThemeMode.dark,
-      home: Consumer<AuthProvider>(
-        builder: (context, auth, child) {
-          if (auth.isLoading) {
-            return const TelaSplash();
-          }
-          if (auth.isLoggedIn) {
-            return const MapaScreen();
-          }
-          return const LoginScreen();
-        },
+    return WithForegroundTask(
+      child: MaterialApp(
+        title: 'Helpi',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.darkTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: ThemeMode.dark,
+        home: Consumer<AuthProvider>(
+          builder: (context, auth, child) {
+            if (auth.isLoading) {
+              return const TelaSplash();
+            }
+            if (auth.isLoggedIn) {
+              return const MapaScreen();
+            }
+            return const LoginScreen();
+          },
+        ),
       ),
     );
   }
