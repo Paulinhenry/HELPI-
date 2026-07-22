@@ -44,6 +44,7 @@ dependencies:
   audioplayers: ^6.7.1
   wakelock_plus: ^1.6.1
   flutter_ringtone_player: ^4.0.0+4
+  flutter_foreground_task: ^8.13.4
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
   http: ^1.4.0

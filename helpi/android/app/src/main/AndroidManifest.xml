@@ -5,7 +5,10 @@
     <!-- FCM: Permissão para push notifications (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    
+    <!-- Foreground Service: Manter app ativo em background durante chamado -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <application
         android:label="helpi"
@@ -25,6 +28,12 @@
         <!-- Google Maps API Key para renderizar o mapa com ruas reais -->
         <meta-data android:name="com.google.android.geo.API_KEY"
                    android:value="AIzaSyC-QhhU8DO0mkkuzx_MuSPz-Z4nwJtF37E"/>
+
+        <!-- Foreground Service Plugin -->
+        <service 
+            android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
+            android:foregroundServiceType="location"
+            android:exported="false" />
 
         <activity
             android:name=".MainActivity"

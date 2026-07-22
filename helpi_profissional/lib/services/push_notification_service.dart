@@ -15,6 +15,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../core/network/app_client.dart';
+import 'foreground_notification_service.dart';
 
 /// Handler de mensagens em background — OBRIGATÓRIO ser top-level function.
 /// Chamado quando a app está fechada ou em background.
@@ -147,6 +148,10 @@ class PushNotificationService {
             '[FCM] ⏭️ Chamado $chamadoId já recebido via Socket.IO, ignorando push');
         return;
       }
+
+      // Atualiza a notificação persistente do foreground service
+      final categoria = data['categoria'] ?? 'Serviço';
+      ForegroundNotificationService().atualizarParaNovoChamado(categoria);
 
       if (onNovoChamadoForeground != null) {
         onNovoChamadoForeground!(_converterDataParaMapa(data));

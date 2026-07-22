@@ -8,6 +8,7 @@ import '../../../core/services/socket_service.dart';
 import '../services/chamados_service.dart';
 import '../services/categorias_service.dart';
 import '../../pagamentos/services/pagamento_service.dart';
+import '../../../core/services/foreground_notification_service.dart';
 
 class ChamadosProvider with ChangeNotifier {
   final ChamadosService _chamadosService = ChamadosService();
@@ -132,6 +133,7 @@ class ChamadosProvider with ChangeNotifier {
           _isProcurando = true;
           // Iniciar timer visual (dummy) e conectar sockets se necessário
           SocketService().ouvirAtualizacoesChamado(_onAtualizacaoChamado);
+          ForegroundNotificationService().iniciarProcurando();
         } else if (status == 'a_caminho' || status == 'em_servico') {
           _isProcurando = false;
           _isProfissionalACaminho = true;
@@ -140,7 +142,9 @@ class ChamadosProvider with ChangeNotifier {
           
           SocketService().ouvirAtualizacoesChamado(_onAtualizacaoChamado);
           SocketService().ouvirLocalizacaoProfissional(_onLocalizacaoProfissional);
+          ForegroundNotificationService().atualizarParaACaminho(_nomeProfissional);
         } else if (status == 'finalizado') {
+          ForegroundNotificationService().parar();
           final pgStatus = ativo['pagamento_status'];
           if (pgStatus == 'pendente' || pgStatus == null) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -223,6 +227,7 @@ class ChamadosProvider with ChangeNotifier {
       // 2. SÓ DEPOIS do chamado ser criado é que o socket e o timer começam
       SocketService().ouvirAtualizacoesChamado(_onAtualizacaoChamado);
       _iniciarContador();
+      ForegroundNotificationService().iniciarProcurando();
       
       notifyListeners();
     } catch (e) {
@@ -261,6 +266,7 @@ class ChamadosProvider with ChangeNotifier {
     _isProcurando = false;
     _isProfissionalACaminho = false;
     _idChamadoAtual = null;
+    ForegroundNotificationService().parar();
     notifyListeners();
     
     onTimeout?.call();
@@ -283,6 +289,7 @@ class ChamadosProvider with ChangeNotifier {
     _isProfissionalACaminho = false;
     _categoriaSelecionada = null;
     _idChamadoAtual = null;
+    ForegroundNotificationService().parar();
     notifyListeners();
   }
 
@@ -298,6 +305,7 @@ class ChamadosProvider with ChangeNotifier {
       
       // Inicia a escuta da localização em tempo real
       SocketService().ouvirLocalizacaoProfissional(_onLocalizacaoProfissional);
+      ForegroundNotificationService().atualizarParaACaminho(_nomeProfissional);
       
       notifyListeners();
       
@@ -306,6 +314,7 @@ class ChamadosProvider with ChangeNotifier {
       // Se for cancelado, resetamos tudo
       resetarEstado();
     } else if (data['status_novo'] == 'finalizado' && data['chamado_id'] == _idChamadoAtual) {
+      ForegroundNotificationService().parar();
       // Quando finalizado, vamos transitar para a Caixa Registadora (Checkout)
       onServicoFinalizado?.call(data);
     }
@@ -333,6 +342,7 @@ class ChamadosProvider with ChangeNotifier {
     _estimativaMax = null;
     _estimativaSugerida = null;
     SocketService().pararDeOuvirLocalizacao();
+    ForegroundNotificationService().parar();
     notifyListeners();
   }
 
