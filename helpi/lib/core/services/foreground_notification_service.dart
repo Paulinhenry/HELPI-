@@ -52,19 +52,22 @@ class ForegroundNotificationService {
 
   /// Inicializa e inicia o Foreground Service com notificação "Procurando Profissional".
   Future<void> iniciarProcurando() async {
-    _ensureInitialized();
+    if (kIsWeb) return;
+    
+    try {
+      _ensureInitialized();
 
-    // 1. Pedir permissão de notificação (obrigatório Android 13+)
-    final NotificationPermission notifPerm =
-        await FlutterForegroundTask.checkNotificationPermission();
-    if (notifPerm != NotificationPermission.granted) {
-      final NotificationPermission result =
-          await FlutterForegroundTask.requestNotificationPermission();
-      if (result != NotificationPermission.granted) {
-        debugPrint('[ForegroundService] ❌ Permissão de notificação negada');
-        return;
+      // 1. Pedir permissão de notificação (obrigatório Android 13+)
+      final NotificationPermission notifPerm =
+          await FlutterForegroundTask.checkNotificationPermission();
+      if (notifPerm != NotificationPermission.granted) {
+        final NotificationPermission result =
+            await FlutterForegroundTask.requestNotificationPermission();
+        if (result != NotificationPermission.granted) {
+          debugPrint('[ForegroundService] ❌ Permissão de notificação negada');
+          return;
+        }
       }
-    }
 
     // 2. Verificar se já está rodando
     final bool isRunning = await FlutterForegroundTask.isRunningService;
@@ -81,16 +84,22 @@ class ForegroundNotificationService {
       callback: foregroundTaskCallback,
     );
 
-    if (result is ServiceRequestSuccess) {
-      debugPrint('[ForegroundService] ✅ Serviço iniciado — Status: Procurando');
-    } else if (result is ServiceRequestFailure) {
-      debugPrint('[ForegroundService] ❌ Erro ao iniciar serviço: ${result.error}');
+      if (result is ServiceRequestSuccess) {
+        debugPrint('[ForegroundService] ✅ Serviço iniciado — Status: Procurando');
+      } else if (result is ServiceRequestFailure) {
+        debugPrint('[ForegroundService] ❌ Erro ao iniciar serviço: ${result.error}');
+      }
+    } catch (e) {
+      debugPrint('[ForegroundService] ⚠️ Erro ao iniciar (teste?): $e');
     }
   }
 
   /// Para o Foreground Service e remove a notificação.
   Future<void> parar() async {
-    final bool isRunning = await FlutterForegroundTask.isRunningService;
+    if (kIsWeb) return;
+    
+    try {
+      final bool isRunning = await FlutterForegroundTask.isRunningService;
     if (!isRunning) {
       debugPrint('[ForegroundService] ⚠️ Serviço não está rodando');
       return;
@@ -98,35 +107,50 @@ class ForegroundNotificationService {
 
     final ServiceRequestResult result = await FlutterForegroundTask.stopService();
 
-    if (result is ServiceRequestSuccess) {
-      debugPrint('[ForegroundService] ⛔ Serviço parado');
-    } else if (result is ServiceRequestFailure) {
-      debugPrint('[ForegroundService] ❌ Erro ao parar serviço: ${result.error}');
+      if (result is ServiceRequestSuccess) {
+        debugPrint('[ForegroundService] ⛔ Serviço parado');
+      } else if (result is ServiceRequestFailure) {
+        debugPrint('[ForegroundService] ❌ Erro ao parar serviço: ${result.error}');
+      }
+    } catch (e) {
+      debugPrint('[ForegroundService] ⚠️ Erro ao parar (teste?): $e');
     }
   }
 
   /// Atualiza a notificação para mostrar que o profissional está a caminho.
   Future<void> atualizarParaACaminho(String nomeProfissional) async {
-    final bool isRunning = await FlutterForegroundTask.isRunningService;
+    if (kIsWeb) return;
+
+    try {
+      final bool isRunning = await FlutterForegroundTask.isRunningService;
     if (!isRunning) {
       // Caso o serviço tenha morrido, podemos tentar iniciar novamente
       await iniciarProcurando(); 
     }
 
-    await FlutterForegroundTask.updateService(
-      notificationTitle: '🚨 Profissional a caminho!',
-      notificationText: '$nomeProfissional está a caminho da sua morada.',
-    );
+      await FlutterForegroundTask.updateService(
+        notificationTitle: '🚨 Profissional a caminho!',
+        notificationText: '$nomeProfissional está a caminho da sua morada.',
+      );
 
-    debugPrint('[ForegroundService] 🚨 Notificação atualizada — A Caminho: $nomeProfissional');
+      debugPrint('[ForegroundService] 🚨 Notificação atualizada — A Caminho: $nomeProfissional');
+    } catch (e) {
+      debugPrint('[ForegroundService] ⚠️ Erro ao atualizar (teste?): $e');
+    }
   }
 
   /// Interno: Restaura para Procurando (útil se já estiver rodando).
   Future<void> _atualizarParaProcurando() async {
-    await FlutterForegroundTask.updateService(
-      notificationTitle: '🔎 Procurando Profissional',
-      notificationText: 'A aguardar que um profissional aceite o pedido...',
-    );
+    if (kIsWeb) return;
+
+    try {
+      await FlutterForegroundTask.updateService(
+        notificationTitle: '🔎 Procurando Profissional',
+        notificationText: 'A aguardar que um profissional aceite o pedido...',
+      );
+    } catch (e) {
+      debugPrint('[ForegroundService] ⚠️ Erro ao atualizar (teste?): $e');
+    }
   }
 }
 

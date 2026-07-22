@@ -54,20 +54,23 @@ class ForegroundNotificationService {
 
   /// Inicializa e inicia o Foreground Service com notificação "Online".
   Future<void> iniciar() async {
-    _ensureInitialized();
+    if (kIsWeb) return;
 
-    // 1. Pedir permissão de notificação (obrigatório Android 13+)
-    final NotificationPermission notifPerm =
-        await FlutterForegroundTask.checkNotificationPermission();
-    if (notifPerm != NotificationPermission.granted) {
-      final NotificationPermission result =
-          await FlutterForegroundTask.requestNotificationPermission();
-      if (result != NotificationPermission.granted) {
-        debugPrint(
-            '[ForegroundService] ❌ Permissão de notificação negada');
-        return;
+    try {
+      _ensureInitialized();
+
+      // 1. Pedir permissão de notificação (obrigatório Android 13+)
+      final NotificationPermission notifPerm =
+          await FlutterForegroundTask.checkNotificationPermission();
+      if (notifPerm != NotificationPermission.granted) {
+        final NotificationPermission result =
+            await FlutterForegroundTask.requestNotificationPermission();
+        if (result != NotificationPermission.granted) {
+          debugPrint(
+              '[ForegroundService] ❌ Permissão de notificação negada');
+          return;
+        }
       }
-    }
 
     // 2. Verificar se já está rodando (evita ServiceAlreadyStartedException)
     final bool isRunning = await FlutterForegroundTask.isRunningService;
@@ -86,17 +89,23 @@ class ForegroundNotificationService {
       callback: foregroundTaskCallback,
     );
 
-    if (result is ServiceRequestSuccess) {
-      debugPrint('[ForegroundService] ✅ Serviço iniciado — Status: Online');
-    } else if (result is ServiceRequestFailure) {
-      debugPrint(
-          '[ForegroundService] ❌ Erro ao iniciar serviço: ${result.error}');
+      if (result is ServiceRequestSuccess) {
+        debugPrint('[ForegroundService] ✅ Serviço iniciado — Status: Online');
+      } else if (result is ServiceRequestFailure) {
+        debugPrint(
+            '[ForegroundService] ❌ Erro ao iniciar serviço: ${result.error}');
+      }
+    } catch (e) {
+      debugPrint('[ForegroundService] ⚠️ Erro ao iniciar (teste?): $e');
     }
   }
 
   /// Para o Foreground Service e remove a notificação.
   Future<void> parar() async {
-    final bool isRunning = await FlutterForegroundTask.isRunningService;
+    if (kIsWeb) return;
+
+    try {
+      final bool isRunning = await FlutterForegroundTask.isRunningService;
     if (!isRunning) {
       debugPrint('[ForegroundService] ⚠️ Serviço não está rodando');
       return;
@@ -105,41 +114,56 @@ class ForegroundNotificationService {
     final ServiceRequestResult result =
         await FlutterForegroundTask.stopService();
 
-    if (result is ServiceRequestSuccess) {
-      debugPrint('[ForegroundService] ⛔ Serviço parado');
-    } else if (result is ServiceRequestFailure) {
-      debugPrint(
-          '[ForegroundService] ❌ Erro ao parar serviço: ${result.error}');
+      if (result is ServiceRequestSuccess) {
+        debugPrint('[ForegroundService] ⛔ Serviço parado');
+      } else if (result is ServiceRequestFailure) {
+        debugPrint(
+            '[ForegroundService] ❌ Erro ao parar serviço: ${result.error}');
+      }
+    } catch (e) {
+      debugPrint('[ForegroundService] ⚠️ Erro ao parar (teste?): $e');
     }
   }
 
   /// Atualiza a notificação para mostrar que chegou um novo chamado.
   Future<void> atualizarParaNovoChamado(String categoria) async {
-    final bool isRunning = await FlutterForegroundTask.isRunningService;
+    if (kIsWeb) return;
+
+    try {
+      final bool isRunning = await FlutterForegroundTask.isRunningService;
     if (!isRunning) return;
 
-    await FlutterForegroundTask.updateService(
-      notificationTitle: '🚨 Novo Chamado!',
-      notificationText: categoria.isNotEmpty
-          ? '$categoria — Toque para abrir'
-          : 'Toque para ver os detalhes',
-    );
+      await FlutterForegroundTask.updateService(
+        notificationTitle: '🚨 Novo Chamado!',
+        notificationText: categoria.isNotEmpty
+            ? '$categoria — Toque para abrir'
+            : 'Toque para ver os detalhes',
+      );
 
-    debugPrint(
-        '[ForegroundService] 🚨 Notificação atualizada — Novo chamado: $categoria');
+      debugPrint(
+          '[ForegroundService] 🚨 Notificação atualizada — Novo chamado: $categoria');
+    } catch (e) {
+      debugPrint('[ForegroundService] ⚠️ Erro ao atualizar (teste?): $e');
+    }
   }
 
   /// Restaura a notificação para o status "Online" (após aceitar/recusar chamado).
   Future<void> restaurarStatusOnline() async {
-    final bool isRunning = await FlutterForegroundTask.isRunningService;
+    if (kIsWeb) return;
+
+    try {
+      final bool isRunning = await FlutterForegroundTask.isRunningService;
     if (!isRunning) return;
 
-    await FlutterForegroundTask.updateService(
-      notificationTitle: '🟢 Online',
-      notificationText: 'Aguardando chamados na sua área',
-    );
+      await FlutterForegroundTask.updateService(
+        notificationTitle: '🟢 Online',
+        notificationText: 'Aguardando chamados na sua área',
+      );
 
-    debugPrint('[ForegroundService] 🟢 Notificação restaurada — Status: Online');
+      debugPrint('[ForegroundService] 🟢 Notificação restaurada — Status: Online');
+    } catch (e) {
+      debugPrint('[ForegroundService] ⚠️ Erro ao restaurar (teste?): $e');
+    }
   }
 }
 
