@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -19,19 +20,23 @@ import 'features/chamados/screens/mapa_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  FlutterForegroundTask.initCommunicationPort();
+  if (!kIsWeb) {
+    FlutterForegroundTask.initCommunicationPort();
+  }
   await dotenv.load(fileName: ".env");
 
-  try {
-    // Inicializa o Firebase (obrigatório antes de usar FCM)
-    await Firebase.initializeApp();
-    // Regista o handler de background (obrigatório ser top-level function)
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    // Inicializa push notifications do cliente
-    final pushService = PushNotificationService();
-    await pushService.inicializar();
-  } catch (e) {
-    debugPrint('Erro ao inicializar Firebase: $e');
+  if (!kIsWeb) {
+    try {
+      // Inicializa o Firebase (obrigatório antes de usar FCM)
+      await Firebase.initializeApp();
+      // Regista o handler de background (obrigatório ser top-level function)
+      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+      // Inicializa push notifications do cliente
+      final pushService = PushNotificationService();
+      await pushService.inicializar();
+    } catch (e) {
+      debugPrint('Erro ao inicializar Firebase: $e');
+    }
   }
 
   // Immersive status bar
@@ -60,25 +65,31 @@ class HelpiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return WithForegroundTask(
-      child: MaterialApp(
-        title: 'Helpi',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.dark,
-        home: Consumer<AuthProvider>(
-          builder: (context, auth, child) {
-            if (auth.isLoading) {
-              return const TelaSplash();
-            }
-            if (auth.isLoggedIn) {
-              return const MapaScreen();
-            }
-            return const LoginScreen();
-          },
-        ),
+    final materialApp = MaterialApp(
+      title: 'Helpi',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.darkTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.dark,
+      home: Consumer<AuthProvider>(
+        builder: (context, auth, child) {
+          if (auth.isLoading) {
+            return const TelaSplash();
+          }
+          if (auth.isLoggedIn) {
+            return const MapaScreen();
+          }
+          return const LoginScreen();
+        },
       ),
+    );
+
+    if (kIsWeb) {
+      return materialApp;
+    }
+
+    return WithForegroundTask(
+      child: materialApp,
     );
   }
 }

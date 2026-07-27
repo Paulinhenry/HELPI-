@@ -30,6 +30,7 @@ const rotasAvaliacoes = require('./routes/avaliacoes.routes');
 const rotasAuth = require('./routes/auth.routes');
 const rotasCategorias = require('./routes/categorias.routes');
 const rotasPagamentos = require('./routes/pagamentos.routes');
+const rotasRadar = require('./routes/radar.routes');
 
 const app = express();
 
@@ -108,6 +109,7 @@ app.use('/api/v1/chamados', rotasChamados);
 app.use('/api/v1/avaliacoes', rotasAvaliacoes);
 app.use('/api/v1/categorias', rotasCategorias);
 app.use('/api/v1/pagamentos', rotasPagamentos);
+app.use('/api/v1/radar', rotasRadar);
 
 // Retrocompatibilidade — rotas antigas continuam funcionando
 app.use('/api', rotasAuth);

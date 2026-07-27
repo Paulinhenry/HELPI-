@@ -31,6 +31,7 @@ class ChamadosProvider with ChangeNotifier {
   int? _estimativaMin;
   int? _estimativaMax;
   int? _estimativaSugerida;
+  double? _multiplicadorSurge = 1.0;
   bool _calculandoEstimativa = false;
 
   // Tracking do Profissional
@@ -61,6 +62,7 @@ class ChamadosProvider with ChangeNotifier {
   int? get estimativaMin => _estimativaMin;
   int? get estimativaMax => _estimativaMax;
   int? get estimativaSugerida => _estimativaSugerida;
+  double? get multiplicadorSurge => _multiplicadorSurge;
   bool get calculandoEstimativa => _calculandoEstimativa;
   
   bool get isProfissionalACaminho => _isProfissionalACaminho;
@@ -92,15 +94,24 @@ class ChamadosProvider with ChangeNotifier {
 
     _debounceEstimativa = Timer(const Duration(milliseconds: 800), () async {
       try {
-        final estimativa = await _pagamentoService.estimarPreco(_categoriaSelecionada!, _descricaoProblema);
+        final estimativa = await _pagamentoService.estimarPreco(
+          _categoriaSelecionada!, 
+          _descricaoProblema,
+          lat: _posicaoAtual?.latitude,
+          lng: _posicaoAtual?.longitude,
+        );
         _estimativaMin = estimativa['preco_minimo'];
         _estimativaMax = estimativa['preco_maximo'];
         _estimativaSugerida = estimativa['preco_sugerido'];
+        _multiplicadorSurge = estimativa['multiplicador_surge'] != null 
+            ? double.tryParse(estimativa['multiplicador_surge'].toString()) 
+            : 1.0;
       } catch (e) {
         debugPrint('Erro ao estimar preço: $e');
         _estimativaMin = null;
         _estimativaMax = null;
         _estimativaSugerida = null;
+        _multiplicadorSurge = 1.0;
       } finally {
         _calculandoEstimativa = false;
         notifyListeners();
@@ -341,6 +352,7 @@ class ChamadosProvider with ChangeNotifier {
     _estimativaMin = null;
     _estimativaMax = null;
     _estimativaSugerida = null;
+    _multiplicadorSurge = 1.0;
     SocketService().pararDeOuvirLocalizacao();
     ForegroundNotificationService().parar();
     notifyListeners();

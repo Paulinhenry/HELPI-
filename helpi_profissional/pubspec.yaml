@@ -56,6 +56,7 @@ dependencies:
   # Firebase: Push Notifications (Despertador Infalível)
   firebase_core: ^4.12.1
   firebase_messaging: ^16.4.3
+  google_maps_flutter: ^2.10.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
