@@ -7,13 +7,13 @@ const logger = require('../utils/logger');
 
 const estimarPreco = async (req, res, next) => {
     try {
-        const { categoria, descricao } = req.body;
+        const { categoria, descricao, lat, lng } = req.body;
 
         if (!categoria) {
             return res.status(400).json({ erro: "Categoria é obrigatória para a estimativa." });
         }
 
-        const estimativa = analisarProblema(categoria, descricao);
+        const estimativa = await analisarProblema(categoria, descricao, lat, lng);
 
         return res.json({
             mensagem: "Estimativa calculada com sucesso",

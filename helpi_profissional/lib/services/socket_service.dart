@@ -11,6 +11,7 @@ class SocketService {
   SocketService._internal();
 
   io.Socket? _socket;
+  io.Socket? get socket => _socket;
 
   Future<void> ligarRadar(
     String profissionalId, 

@@ -41,9 +41,11 @@ const PALAVRAS_ESCALA = ['vários', 'varios', 'todos', 'toda', 'completo', 'gran
  * 
  * @param {String} categoria Categoria do serviço (Ex: 'Elétrica')
  * @param {String} descricao Descrição escrita pelo cliente
- * @returns {Object} Estimativa com { preco_minimo, preco_maximo, preco_sugerido, complexidade, fatores }
+ * @param {Number} lat Latitude do cliente (opcional)
+ * @param {Number} lng Longitude do cliente (opcional)
+ * @returns {Promise<Object>} Estimativa com { preco_minimo, preco_maximo, preco_sugerido, complexidade, fatores, multiplicador_surge }
  */
-const analisarProblema = (categoria, descricao) => {
+const analisarProblema = async (categoria, descricao, lat = null, lng = null) => {
     // Normalização
     const descNormalizada = (descricao || '').toLowerCase();
     
@@ -111,6 +113,15 @@ const analisarProblema = (categoria, descricao) => {
     let minCalculado = minBase * fatorUrgencia * fatorEscala;
     let maxCalculado = maxBase * fatorUrgencia * fatorEscala;
 
+    // --- NOVA LÓGICA DE SURGE PRICING ---
+    let multiplicadorSurge = 1.0;
+    if (lat && lng) {
+        const surgePricingService = require('../services/surgePricing.service');
+        multiplicadorSurge = await surgePricingService.calcularMultiplicadorParaLocal(lat, lng);
+        minCalculado *= multiplicadorSurge;
+        maxCalculado *= multiplicadorSurge;
+    }
+
     // Adiciona a Taxa de Deslocamento Fixa do HELPI (R$ 40)
     minCalculado += TAXA_DESLOCAMENTO;
     maxCalculado += TAXA_DESLOCAMENTO;
@@ -127,7 +138,8 @@ const analisarProblema = (categoria, descricao) => {
         preco_sugerido: sugerido,
         complexidade: complexidadeDetectada,
         fatores_detectados: fatoresDetectados,
-        taxa_deslocamento_inclusa: TAXA_DESLOCAMENTO
+        taxa_deslocamento_inclusa: TAXA_DESLOCAMENTO,
+        multiplicador_surge: multiplicadorSurge
     };
 };
 

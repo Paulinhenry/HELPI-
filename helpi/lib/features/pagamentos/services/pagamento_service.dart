@@ -4,13 +4,15 @@ import '../../../core/network/app_client.dart';
 class PagamentoService {
   final ApiClient _apiClient = ApiClient();
 
-  Future<Map<String, dynamic>> estimarPreco(String categoria, String descricao) async {
+  Future<Map<String, dynamic>> estimarPreco(String categoria, String descricao, {double? lat, double? lng}) async {
     try {
       final response = await _apiClient.dio.post(
         '/pagamentos/estimar',
         data: {
           'categoria': categoria,
           'descricao': descricao,
+          'lat': lat,
+          'lng': lng,
         },
       );
       return response.data['estimativa'];

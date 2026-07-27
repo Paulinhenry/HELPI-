@@ -930,71 +930,99 @@ class _MapaScreenViewState extends State<MapaScreenView>
   }
 
   Widget _buildEstimateCard(ChamadosProvider provider) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.25)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.account_balance_wallet_rounded,
-                color: AppColors.primary, size: 20),
+    return Column(
+      children: [
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+                color: AppColors.primary.withValues(alpha: 0.25)),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Estimativa de custo',
-                    style: AppTextStyles.labelS.copyWith(
-                      color: AppColors.textSecondary,
-                    )),
-                const SizedBox(height: 3),
-                provider.calculandoEstimativa
-                    ? Row(
-                        children: [
-                          SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color:
-                                  AppColors.primary.withValues(alpha: 0.8),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.account_balance_wallet_rounded,
+                    color: AppColors.primary, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Estimativa de custo',
+                        style: AppTextStyles.labelS.copyWith(
+                          color: AppColors.textSecondary,
+                        )),
+                    const SizedBox(height: 3),
+                    provider.calculandoEstimativa
+                        ? Row(
+                            children: [
+                              SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color:
+                                      AppColors.primary.withValues(alpha: 0.8),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text('A calcular...',
+                                  style: AppTextStyles.labelM.copyWith(
+                                    color: AppColors.textSecondary,
+                                  )),
+                            ],
+                          )
+                        : Text(
+                            provider.estimativaMin != null
+                                ? 'R\$ ${provider.estimativaMin} – R\$ ${provider.estimativaMax}'
+                                : 'Não disponível',
+                            style: AppTextStyles.h4.copyWith(
+                              color: provider.estimativaMin != null
+                                  ? AppColors.textPrimary
+                                  : AppColors.textTertiary,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Text('A calcular...',
-                              style: AppTextStyles.labelM.copyWith(
-                                color: AppColors.textSecondary,
-                              )),
-                        ],
-                      )
-                    : Text(
-                        provider.estimativaMin != null
-                            ? 'R\$ ${provider.estimativaMin} – R\$ ${provider.estimativaMax}'
-                            : 'Não disponível',
-                        style: AppTextStyles.h4.copyWith(
-                          color: provider.estimativaMin != null
-                              ? AppColors.textPrimary
-                              : AppColors.textTertiary,
-                        ),
-                      ),
-              ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (provider.multiplicadorSurge != null && provider.multiplicadorSurge! > 1.0)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.bolt_rounded, color: Colors.orange, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Preço dinâmico ativo. Os preços estão ligeiramente mais altos devido à alta procura na sua região agora.',
+                      style: AppTextStyles.labelS.copyWith(color: Colors.orange),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 

@@ -46,7 +46,7 @@ const criarChamado = async (req, res, next) => {
         const categoriaMapeada = MAPA_CATEGORIAS[catSoli] || catSoli;
 
         // --- INTEGRAÇÃO COM MOTOR DE PRECIFICAÇÃO ---
-        const estimativa = analisarProblema(categoria_solicitada, problema_descricao);
+        const estimativa = await analisarProblema(categoria_solicitada, problema_descricao, latitude_destino, longitude_destino);
 
         // ── POSTIGS: Busca espacial com índice GiST (O(log n)) ──
         // ST_DWithin usa o índice GIST automaticamente (vs Haversine que faz full table scan)
