@@ -15,23 +15,23 @@ describe('🧠 Motor de Precificação Inteligente', () => {
     // Palavras críticas ("vazamento", "urgente") devem subir a estimativa
     describe('Análise de Risco (Urgência)', () => {
         
-        it('deve detectar urgência e aplicar +15% ao preço', () => {
-            const resultado = analisarProblema('Hidráulica', 'vazamento urgente no banheiro');
+        it('deve detectar urgência e aplicar +15% ao preço', async () => {
+            const resultado = await analisarProblema('Hidráulica', 'vazamento urgente no banheiro');
             
             expect(resultado.fatores_detectados).toContain('urgência (+15%)');
             expect(resultado.preco_minimo).toBeGreaterThan(TAXA_DESLOCAMENTO);
             expect(resultado.preco_maximo).toBeGreaterThan(resultado.preco_minimo);
         });
 
-        it('deve detectar palavra "fogo" como urgência via descrição complexa', () => {
-            const resultado = analisarProblema('Elétrica', 'saiu fogo do quadro elétrico socorro');
+        it('deve detectar palavra "fogo" como urgência via descrição complexa', async () => {
+            const resultado = await analisarProblema('Elétrica', 'saiu fogo do quadro elétrico socorro');
             
             // "fogo" não está nas keywords de urgência padrão, mas "socorro" está
             expect(resultado.fatores_detectados).toContain('urgência (+15%)');
         });
 
-        it('deve detectar "socorro" como urgência', () => {
-            const resultado = analisarProblema('Elétrica', 'socorro preciso de um eletricista');
+        it('deve detectar "socorro" como urgência', async () => {
+            const resultado = await analisarProblema('Elétrica', 'socorro preciso de um eletricista');
             
             expect(resultado.fatores_detectados).toContain('urgência (+15%)');
         });
@@ -41,8 +41,8 @@ describe('🧠 Motor de Precificação Inteligente', () => {
     // Texto limpo e simples deve manter o valor base da categoria
     describe('Escala (Preço Base)', () => {
         
-        it('deve retornar preço base simples para "instalar tomada"', () => {
-            const resultado = analisarProblema('Elétrica', 'instalar tomada');
+        it('deve retornar preço base simples para "instalar tomada"', async () => {
+            const resultado = await analisarProblema('Elétrica', 'instalar tomada');
             
             expect(resultado.complexidade).toBe('simples');
             // Elétrica simples: min=60, max=120 + TAXA_DESLOCAMENTO(40) = min=100, max=160
@@ -51,8 +51,8 @@ describe('🧠 Motor de Precificação Inteligente', () => {
             expect(resultado.fatores_detectados).toHaveLength(0);
         });
 
-        it('deve retornar preço médio para "curto-circuito"', () => {
-            const resultado = analisarProblema('Elétrica', 'curto-circuito na sala');
+        it('deve retornar preço médio para "curto-circuito"', async () => {
+            const resultado = await analisarProblema('Elétrica', 'curto-circuito na sala');
             
             expect(resultado.complexidade).toBe('media');
             // Elétrica média: min=100, max=200 + TAXA(40) = 140, 240
@@ -60,8 +60,8 @@ describe('🧠 Motor de Precificação Inteligente', () => {
             expect(resultado.preco_maximo).toBe(240);
         });
 
-        it('deve retornar preço complexo para "fiação do quadro"', () => {
-            const resultado = analisarProblema('Elétrica', 'preciso trocar a fiação do quadro elétrico');
+        it('deve retornar preço complexo para "fiação do quadro"', async () => {
+            const resultado = await analisarProblema('Elétrica', 'preciso trocar a fiação do quadro elétrico');
             
             expect(resultado.complexidade).toBe('complexa');
             // Elétrica complexa: min=150, max=350 + TAXA(40) = 190, 390
@@ -73,14 +73,12 @@ describe('🧠 Motor de Precificação Inteligente', () => {
     // ─── TESTE DE CATEGORIA DESCONHECIDA ────────────────────
     describe('Categoria Desconhecida (Fallback)', () => {
         
-        it('não deve crashar com categoria inexistente', () => {
-            expect(() => {
-                analisarProblema('Jardinagem', 'cortar a relva do jardim');
-            }).not.toThrow();
+        it('não deve crashar com categoria inexistente', async () => {
+            await expect(analisarProblema('Jardinagem', 'cortar a relva do jardim')).resolves.toBeDefined();
         });
 
-        it('deve retornar valores fallback genéricos para categoria desconhecida', () => {
-            const resultado = analisarProblema('Jardinagem', 'cortar a relva');
+        it('deve retornar valores fallback genéricos para categoria desconhecida', async () => {
+            const resultado = await analisarProblema('Jardinagem', 'cortar a relva');
             
             // Fallback: min=50, max=150 + TAXA(40) = 90, 190
             expect(resultado.preco_minimo).toBe(90);
@@ -92,20 +90,16 @@ describe('🧠 Motor de Precificação Inteligente', () => {
     // ─── TESTE DE DESCRIÇÃO VAZIA ───────────────────────────
     describe('Descrição Vazia / Nula', () => {
         
-        it('não deve crashar com descrição nula', () => {
-            expect(() => {
-                analisarProblema('Elétrica', null);
-            }).not.toThrow();
+        it('não deve crashar com descrição nula', async () => {
+            await expect(analisarProblema('Elétrica', null)).resolves.toBeDefined();
         });
 
-        it('não deve crashar com descrição undefined', () => {
-            expect(() => {
-                analisarProblema('Elétrica', undefined);
-            }).not.toThrow();
+        it('não deve crashar com descrição undefined', async () => {
+            await expect(analisarProblema('Elétrica', undefined)).resolves.toBeDefined();
         });
 
-        it('deve retornar complexidade media_padrao para descrição vazia', () => {
-            const resultado = analisarProblema('Elétrica', '');
+        it('deve retornar complexidade media_padrao para descrição vazia', async () => {
+            const resultado = await analisarProblema('Elétrica', '');
             
             expect(resultado.complexidade).toBe('media_padrao');
             expect(resultado.preco_minimo).toBeGreaterThan(0);
@@ -116,8 +110,8 @@ describe('🧠 Motor de Precificação Inteligente', () => {
     // ─── TESTE DE MULTIPLICADORES COMBINADOS ────────────────
     describe('Multiplicadores Combinados (Urgência + Escala)', () => {
         
-        it('deve aplicar urgência(1.15) + escala(1.20) = 1.38x ao preço', () => {
-            const resultado = analisarProblema('Elétrica', 'urgente preciso trocar todos os interruptores');
+        it('deve aplicar urgência(1.15) + escala(1.20) = 1.38x ao preço', async () => {
+            const resultado = await analisarProblema('Elétrica', 'urgente preciso trocar todos os interruptores');
             
             expect(resultado.fatores_detectados).toContain('urgência (+15%)');
             expect(resultado.fatores_detectados).toContain('larga escala (+20%)');
@@ -138,15 +132,15 @@ describe('🧠 Motor de Precificação Inteligente', () => {
     // ─── TESTE DA TAXA DE DESLOCAMENTO ──────────────────────
     describe('Taxa de Deslocamento (R$ 40)', () => {
         
-        it('deve incluir a taxa de deslocamento fixa de R$ 40', () => {
-            const resultado = analisarProblema('Elétrica', 'instalar tomada');
+        it('deve incluir a taxa de deslocamento fixa de R$ 40', async () => {
+            const resultado = await analisarProblema('Elétrica', 'instalar tomada');
             
             expect(resultado.taxa_deslocamento_inclusa).toBe(40);
             expect(resultado.taxa_deslocamento_inclusa).toBe(TAXA_DESLOCAMENTO);
         });
 
-        it('o preço sugerido deve ser a média entre min e max', () => {
-            const resultado = analisarProblema('Elétrica', 'instalar tomada');
+        it('o preço sugerido deve ser a média entre min e max', async () => {
+            const resultado = await analisarProblema('Elétrica', 'instalar tomada');
             
             const mediaEsperada = Math.ceil((resultado.preco_minimo + resultado.preco_maximo) / 2);
             expect(resultado.preco_sugerido).toBe(mediaEsperada);
@@ -156,8 +150,8 @@ describe('🧠 Motor de Precificação Inteligente', () => {
     // ─── TESTE DE CASE SENSITIVITY ──────────────────────────
     describe('Case Sensitivity', () => {
         
-        it('deve aceitar categoria com case diferente (elétrica vs Elétrica)', () => {
-            const resultado = analisarProblema('elétrica', 'instalar tomada');
+        it('deve aceitar categoria com case diferente (elétrica vs Elétrica)', async () => {
+            const resultado = await analisarProblema('elétrica', 'instalar tomada');
             
             expect(resultado.complexidade).toBe('simples');
             expect(resultado.preco_minimo).toBe(100);
@@ -170,8 +164,8 @@ describe('🧠 Motor de Precificação Inteligente', () => {
         const categorias = ['Elétrica', 'Hidráulica', 'Chaveiro', 'Limpeza', 'Montador'];
         
         categorias.forEach(cat => {
-            it(`deve retornar valores válidos para a categoria "${cat}"`, () => {
-                const resultado = analisarProblema(cat, 'serviço genérico');
+            it(`deve retornar valores válidos para a categoria "${cat}"`, async () => {
+                const resultado = await analisarProblema(cat, 'serviço genérico');
                 
                 expect(resultado.preco_minimo).toBeGreaterThan(0);
                 expect(resultado.preco_maximo).toBeGreaterThan(0);
