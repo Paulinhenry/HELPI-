@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../services/avaliacao_service.dart';
-import '../../../../main.dart';
+import '../../home/screens/home_map_screen.dart';
 
 class AvaliacaoScreen extends StatefulWidget {
   final String chamadoId;
@@ -97,7 +97,7 @@ class _AvaliacaoScreenState extends State<AvaliacaoScreen> {
           
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(
-              builder: (_) => RadarScreen(profissionalId: auth.profissionalId!),
+              builder: (_) => HomeMapScreen(profissionalId: auth.profissionalId!),
             ),
             (route) => false,
           );

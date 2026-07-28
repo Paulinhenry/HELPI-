@@ -722,12 +722,12 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
             _buildTopHeader(),
 
             // ── BOTTOM PANEL ─────────────────────────────────────────
-            SlideTransition(
-              position: _panelSlideAnim,
-              child: Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: SlideTransition(
+                position: _panelSlideAnim,
                 child: _buildBottomPanel(),
               ),
             ),

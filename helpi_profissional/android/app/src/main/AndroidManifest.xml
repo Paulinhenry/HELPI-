@@ -18,6 +18,11 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
+        <!-- Google Maps API Key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyC-QhhU8DO0mkkuzx_MuSPz-Z4nwJtF37E" />
+
         <!-- FCM: Canal de notificação padrão (emergência — som + vibração + heads-up) -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
