@@ -15,6 +15,7 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/app_text_styles.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/chamados/screens/mapa_rota_screen.dart';
+import 'features/home/screens/home_map_screen.dart';
 import 'services/chamado_service.dart';
 import 'services/socket_service.dart';
 import 'services/push_notification_service.dart';
@@ -85,7 +86,7 @@ class HelpiProfissionalApp extends StatelessWidget {
                   nomeCliente: c['cliente_nome']?.toString(), // ✅ Nome real
                 );
               }
-              return RadarScreen(profissionalId: auth.profissionalId!);
+              return HomeMapScreen(profissionalId: auth.profissionalId!);
             }
             return const LoginScreen();
           },
