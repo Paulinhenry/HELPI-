@@ -31,6 +31,7 @@ class MapaRotaScreen extends StatefulWidget {
   final String categoria;
   final String descricao;
   final String? clienteId;
+  final String? nomeCliente; // ✅ Nome real do cliente para a tela de avaliação
   final double? valorEstimadoMin;
   final double? valorEstimadoMax;
 
@@ -42,6 +43,7 @@ class MapaRotaScreen extends StatefulWidget {
     required this.categoria,
     required this.descricao,
     this.clienteId,
+    this.nomeCliente,
     this.valorEstimadoMin,
     this.valorEstimadoMax,
   });
@@ -568,7 +570,8 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
           MaterialPageRoute(
             builder: (_) => AvaliacaoScreen(
               chamadoId: widget.chamadoId,
-              nomeCliente: 'o cliente',
+              // ✅ Usa o nome real; fallback para 'o cliente' se não disponível
+              nomeCliente: widget.nomeCliente ?? 'o cliente',
             ),
           ),
         );

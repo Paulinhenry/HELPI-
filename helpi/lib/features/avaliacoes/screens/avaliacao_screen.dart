@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
-import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../services/avaliacao_service.dart';
 import '../../chamados/screens/mapa_screen.dart';
-import '../../chamados/providers/chamados_provider.dart';
+
 
 class AvaliacaoScreen extends StatefulWidget {
   final Map<String, dynamic> data;
@@ -73,9 +72,25 @@ class _AvaliacaoScreenState extends State<AvaliacaoScreen> {
 
     setState(() => _enviando = true);
 
+    // ✅ Extrai o chamadoId ANTES do await, enquanto o contexto ainda é válido.
+    // Não usamos ChamadosProvider aqui porque a AvaliacaoScreen vive
+    // numa rota diferente e o provider é scoped ao MapaScreen.
+    final chamadoId = widget.data['id']?.toString() ?? widget.data['chamado_id']?.toString() ?? '';
+
+    if (chamadoId.isEmpty) {
+      setState(() => _enviando = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Erro: ID do chamado não encontrado.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return;
+    }
+
     try {
-      final chamadoId = widget.data['id'] ?? widget.data['chamado_id'] ?? Provider.of<ChamadosProvider>(context, listen: false).idChamadoAtual;
-      
       await _avaliacaoService.enviarAvaliacaoCliente(
         chamadoId: chamadoId,
         nota: _notaSelecionada,
@@ -94,28 +109,30 @@ class _AvaliacaoScreenState extends State<AvaliacaoScreen> {
       }
 
       if (mounted) {
-        // Resetar o estado do chamado atual
-        Provider.of<ChamadosProvider>(context, listen: false).resetarEstado();
-        
-        // Redireciona para o Mapa após avaliação bem sucedida
+        // ✅ Navega para o Mapa (remove toda a stack)
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const MapaScreen()),
           (route) => false,
         );
       }
     } catch (e) {
-      setState(() => _enviando = false);
       if (mounted) {
+        setState(() => _enviando = false);
+        // ✅ Se já avaliou, redireciona igualmente
         if (e.toString().toLowerCase().contains('já avaliou')) {
-          Provider.of<ChamadosProvider>(context, listen: false).resetarEstado();
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const MapaScreen()),
             (route) => false,
           );
           return;
         }
+        final mensagem = e.toString().replaceFirst('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(mensagem),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
         );
       }
     }
