@@ -1,5 +1,5 @@
 const pool = require('../config/database');
-const logger = require('./logger.service'); // Assuming logger.service exists, otherwise I should use console.log or standard logger
+const logger = require('../utils/logger'); // Using standard logger
 
 /**
  * Motor de Preço Dinâmico (Surge Pricing) e Mapa de Calor

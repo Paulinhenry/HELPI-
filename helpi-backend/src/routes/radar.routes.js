@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const surgePricingService = require('../services/surgePricing.service');
-const { authProfissional } = require('../middlewares/auth');
+const authProfissional = require('../middlewares/authProfissional');
 
 /**
  * @swagger
