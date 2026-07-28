@@ -237,6 +237,13 @@ const aceitarChamado = async (req, res, next) => {
             }
         }
 
+        // ✅ Busca o nome do cliente para a tela de avaliação
+        const infoCliente = await client.query(
+            'SELECT nome FROM clientes WHERE id = $1',
+            [atualizacao.rows[0].cliente_id]
+        );
+        const cliente_nome = infoCliente.rows[0]?.nome ?? 'o cliente';
+
         await client.query('COMMIT');
 
         // WebSocket: notifica apenas o cliente dono do chamado (O Suspiro de Alívio)
@@ -287,7 +294,10 @@ const aceitarChamado = async (req, res, next) => {
 
         res.json({
             mensagem: "Chamado aceito com sucesso!",
-            chamado: atualizacao.rows[0]
+            chamado: {
+                ...atualizacao.rows[0],
+                cliente_nome // ✅ Inclui o nome do cliente para a tela de avaliação
+            }
         });
     } catch (erro) {
         await client.query('ROLLBACK').catch(() => {});

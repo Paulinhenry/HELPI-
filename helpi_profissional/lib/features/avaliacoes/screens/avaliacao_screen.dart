@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../core/providers/auth_provider.dart';
 import '../services/avaliacao_service.dart';
+// ignore: unused_import — importado via provider acima
+
 
 class AvaliacaoScreen extends StatefulWidget {
   final String chamadoId;
@@ -78,14 +82,32 @@ class _AvaliacaoScreenState extends State<AvaliacaoScreen> {
       );
 
       if (mounted) {
-        // Redireciona com true para o mapa
-        Navigator.of(context).pop(true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Avaliação enviada! Obrigado pelo feedback.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // ✅ Não fazemos pop — a AvaliacaoScreen foi aberta via pushReplacement,
+        // por isso não há rota anterior. Apenas limpamos o estado: o Consumer<AuthProvider>
+        // em main.dart recebe a notificação e reconstrói o home para o RadarScreen.
+        if (mounted) {
+          context.read<AuthProvider>().limparChamadoAtivo();
+        }
       }
     } catch (e) {
-      setState(() => _enviando = false);
       if (mounted) {
+        setState(() => _enviando = false);
+        // ✅ Remove o prefixo "Exception:" para a mensagem ficar limpa
+        final mensagem = e.toString().replaceFirst('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(mensagem),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
         );
       }
     }

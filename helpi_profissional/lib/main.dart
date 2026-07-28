@@ -82,6 +82,7 @@ class HelpiProfissionalApp extends StatelessWidget {
                   categoria: c['categoria_solicitada'] ?? '',
                   descricao: c['problema_descricao'] ?? '',
                   clienteId: c['cliente_id']?.toString(),
+                  nomeCliente: c['cliente_nome']?.toString(), // ✅ Nome real
                 );
               }
               return RadarScreen(profissionalId: auth.profissionalId!);
@@ -505,6 +506,8 @@ class _RadarScreenState extends State<RadarScreen>
                                           '',
                                   clienteId:
                                       chamado['cliente_id']?.toString(),
+                                  nomeCliente:
+                                      chamado['cliente_nome']?.toString(), // ✅ Nome real
                                   valorEstimadoMin: dados[
                                               'valor_estimado_min'] !=
                                           null

@@ -25,12 +25,14 @@ class AvaliacaoService {
         throw Exception('Erro ao enviar avaliação: ${response.statusCode}');
       }
     } on DioException catch (e) {
+      // ✅ Extrai a mensagem do backend diretamente — sem double-wrap
       if (e.response?.statusCode == 409) {
         throw Exception('Você já avaliou este serviço.');
       }
-      throw Exception(e.response?.data?['erro'] ?? e.message);
-    } catch (e) {
-      throw Exception(e.toString());
+      final mensagem = e.response?.data?['erro'] ?? e.message ?? 'Erro desconhecido';
+      throw Exception(mensagem);
     }
+    // ✅ Removido catch (e) genérico que causava "Exception: Exception: ..."
   }
 }
+

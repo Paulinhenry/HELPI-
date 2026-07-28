@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../../core/network/app_client.dart';
 import '../../../core/theme/app_colors.dart';
@@ -15,16 +17,13 @@ class MapaScreen extends StatefulWidget {
 }
 
 class _MapaScreenState extends State<MapaScreen> {
-  final Completer<GoogleMapController> _controller = Completer();
-  final Set<Circle> _circles = {};
+  final MapController _mapController = MapController();
+  final List<CircleMarker> _circles = [];
   Timer? _heatmapTimer;
   final SocketService _socketService = SocketService();
-  
+
   // Posição inicial (centro da cidade ou localização atual)
-  static const CameraPosition _initialPosition = CameraPosition(
-    target: LatLng(-23.550520, -46.633308), // SP Capital
-    zoom: 12.0,
-  );
+  static const LatLng _initialPosition = LatLng(-23.550520, -46.633308); // SP Capital
 
   @override
   void initState() {
@@ -42,14 +41,16 @@ class _MapaScreenState extends State<MapaScreen> {
     // Escuta evento de mudança de multiplicador no socket, se implementado
     _socketService.socket?.on('surge_pricing_update', (data) {
       if (mounted) {
-        final double multiplicador = double.tryParse(data['multiplicador'].toString()) ?? 1.0;
+        final double multiplicador =
+            double.tryParse(data['multiplicador'].toString()) ?? 1.0;
         if (multiplicador > 1.0) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Alta procura na sua região! Ganhos multiplicados por ${multiplicador}x.'),
+              content: Text(
+                  'Alta procura na sua região! Ganhos multiplicados por ${multiplicador}x.'),
               backgroundColor: AppColors.warning,
               duration: const Duration(seconds: 5),
-            )
+            ),
           );
         }
         _fetchHeatmap(); // Recarrega o mapa
@@ -62,14 +63,14 @@ class _MapaScreenState extends State<MapaScreen> {
       final response = await ApiClient().dio.get('/radar/heatmap');
       if (response.statusCode == 200) {
         final List<dynamic> zonas = response.data['zonas'] ?? [];
-        
-        final Set<Circle> newCircles = {};
+
+        final List<CircleMarker> newCircles = [];
         for (var zona in zonas) {
           final lat = double.parse(zona['centro_lat'].toString());
           final lng = double.parse(zona['centro_lng'].toString());
           final raio = double.parse(zona['raio_metros'].toString());
           final mult = double.parse(zona['multiplicador'].toString());
-          
+
           Color corCirculo;
           if (mult < 1.3) {
             corCirculo = Colors.orange.withValues(alpha: 0.3);
@@ -78,14 +79,14 @@ class _MapaScreenState extends State<MapaScreen> {
           }
 
           newCircles.add(
-            Circle(
-              circleId: CircleId('zona_${lat}_$lng'),
-              center: LatLng(lat, lng),
+            CircleMarker(
+              point: LatLng(lat, lng),
               radius: raio,
-              fillColor: corCirculo,
-              strokeColor: corCirculo.withValues(alpha: 0.8),
-              strokeWidth: 2,
-            )
+              useRadiusInMeter: true,
+              color: corCirculo,
+              borderColor: corCirculo.withValues(alpha: 0.8),
+              borderStrokeWidth: 2,
+            ),
           );
         }
 
@@ -104,6 +105,7 @@ class _MapaScreenState extends State<MapaScreen> {
   @override
   void dispose() {
     _heatmapTimer?.cancel();
+    _mapController.dispose();
     super.dispose();
   }
 
@@ -114,14 +116,37 @@ class _MapaScreenState extends State<MapaScreen> {
         title: Text('Mapa de Demanda', style: AppTextStyles.h3),
         backgroundColor: AppColors.bg1,
       ),
-      body: GoogleMap(
-        initialCameraPosition: _initialPosition,
-        myLocationEnabled: true,
-        myLocationButtonEnabled: true,
-        circles: _circles,
-        onMapCreated: (GoogleMapController controller) {
-          _controller.complete(controller);
-        },
+      body: FlutterMap(
+        mapController: _mapController,
+        options: MapOptions(
+          initialCenter: _initialPosition,
+          initialZoom: 12.0,
+          interactionOptions: const InteractionOptions(
+            flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+          ),
+        ),
+        children: [
+          TileLayer(
+            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            userAgentPackageName: 'com.helpi.profissional',
+            tileProvider: CancellableNetworkTileProvider(),
+            // Filtro escuro para combinar com o Dark Mode
+            tileBuilder: (context, widget, tile) {
+              return ColorFiltered(
+                colorFilter: const ColorFilter.matrix([
+                  -1, 0, 0, 0, 255,
+                  0, -1, 0, 0, 255,
+                  0, 0, -1, 0, 255,
+                  0, 0, 0, 1, 0,
+                ]),
+                child: widget,
+              );
+            },
+          ),
+          CircleLayer(
+            circles: _circles,
+          ),
+        ],
       ),
     );
   }
