@@ -1,5 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:helpi/core/providers/auth_provider.dart';
+import 'package:helpi/features/chamados/providers/chamados_provider.dart';
 import 'package:helpi/features/avaliacoes/screens/avaliacao_screen.dart';
 import 'package:helpi/features/avaliacoes/services/avaliacao_service.dart';
 
@@ -15,12 +19,15 @@ class MockAvaliacaoService implements AvaliacaoService {
     String? comentario,
   }) async {
     chamadaRealizada = true;
-    // Simula delay de rede
-    await Future.delayed(const Duration(milliseconds: 100));
+    // Usa um Future que nunca resolve para evitar a navegação para o MapaScreen
+    // (o que previne o crash do Provider e Timers perdidos do MapaScreen na test tree)
+    await Completer<void>().future;
   }
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  
   group('🛡️ Pilar 3: AvaliacaoScreen (App Cliente)', () {
     late MockAvaliacaoService mockService;
     late Map<String, dynamic> mockData;
@@ -34,10 +41,16 @@ void main() {
     });
 
     Widget construirApp() {
-      return MaterialApp(
-        home: AvaliacaoScreen(
-          data: mockData,
-          avaliacaoService: mockService,
+      return MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthProvider>(create: (_) => AuthProvider()),
+          ChangeNotifierProvider<ChamadosProvider>(create: (_) => ChamadosProvider()),
+        ],
+        child: MaterialApp(
+          home: AvaliacaoScreen(
+            data: mockData,
+            avaliacaoService: mockService,
+          ),
         ),
       );
     }
@@ -122,6 +135,10 @@ void main() {
 
       // Verifica se o serviço mock foi chamado
       expect(mockService.chamadaRealizada, isTrue);
+
+      // Limpa a árvore de widgets para dar trigger no dispose() do MapaScreen 
+      // e cancelar os Timers periódicos que ficaram pendentes após a navegação.
+      await tester.pumpWidget(const SizedBox());
     });
   });
 }

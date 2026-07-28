@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:helpi/features/chamados/providers/chamados_provider.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   group('🗺️ MapaScreen — Lógica de Visibilidade do Botão Cancelar', () {
 
     late ChamadosProvider provider;

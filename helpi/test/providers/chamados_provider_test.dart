@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:helpi/features/chamados/providers/chamados_provider.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   group('🧪 ChamadosProvider — Lógica de Estado', () {
 
     late ChamadosProvider provider;
