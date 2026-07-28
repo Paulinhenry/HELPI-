@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../services/avaliacao_service.dart';
-// ignore: unused_import — importado via provider acima
-
+import '../../../../main.dart';
 
 class AvaliacaoScreen extends StatefulWidget {
   final String chamadoId;
@@ -90,11 +89,18 @@ class _AvaliacaoScreenState extends State<AvaliacaoScreen> {
           ),
         );
 
-        // ✅ Não fazemos pop — a AvaliacaoScreen foi aberta via pushReplacement,
-        // por isso não há rota anterior. Apenas limpamos o estado: o Consumer<AuthProvider>
-        // em main.dart recebe a notificação e reconstrói o home para o RadarScreen.
+        // O Consumer de main.dart não substitui a rota atual se esta foi pushed via pushReplacement.
+        // Precisamos forçar o regresso ao RadarScreen.
         if (mounted) {
-          context.read<AuthProvider>().limparChamadoAtivo();
+          final auth = context.read<AuthProvider>();
+          auth.limparChamadoAtivo();
+          
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (_) => RadarScreen(profissionalId: auth.profissionalId!),
+            ),
+            (route) => false,
+          );
         }
       }
     } catch (e) {

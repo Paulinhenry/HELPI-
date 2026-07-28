@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../../../core/network/app_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/theme/map_style_provider.dart';
 import '../../../services/socket_service.dart';
 
 class MapaScreen extends StatefulWidget {
@@ -126,23 +126,7 @@ class _MapaScreenState extends State<MapaScreen> {
           ),
         ),
         children: [
-          TileLayer(
-            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            userAgentPackageName: 'com.helpi.profissional',
-            tileProvider: CancellableNetworkTileProvider(),
-            // Filtro escuro para combinar com o Dark Mode
-            tileBuilder: (context, widget, tile) {
-              return ColorFiltered(
-                colorFilter: const ColorFilter.matrix([
-                  -1, 0, 0, 0, 255,
-                  0, -1, 0, 0, 255,
-                  0, 0, -1, 0, 255,
-                  0, 0, 0, 1, 0,
-                ]),
-                child: widget,
-              );
-            },
-          ),
+          const DarkMapTileLayer(),
           CircleLayer(
             circles: _circles,
           ),

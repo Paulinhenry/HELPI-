@@ -4,7 +4,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
@@ -15,6 +14,7 @@ import '../../../core/services/location_service.dart';
 import '../../../core/providers/auth_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/theme/map_style_provider.dart';
 import '../../../services/chamado_service.dart';
 import '../../../services/socket_service.dart';
 import '../../avaliacoes/screens/avaliacao_screen.dart';
@@ -621,24 +621,8 @@ class _MapaRotaScreenState extends State<MapaRotaScreen>
                 initialZoom: 14.0,
               ),
               children: [
-                // Tile layer — dark style
-                TileLayer(
-                  urlTemplate:
-                      'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-                  subdomains: const ['a', 'b', 'c', 'd'],
-                  userAgentPackageName: 'com.helpi.profissional',
-                  retinaMode: RetinaMode.isHighDensity(context),
-                  tileProvider: CancellableNetworkTileProvider(),
-                  tileBuilder: (context, tileWidget, tile) {
-                    return ColorFiltered(
-                      colorFilter: const ColorFilter.mode(
-                        Color(0xFF0B1120),
-                        BlendMode.modulate,
-                      ),
-                      child: tileWidget,
-                    );
-                  },
-                ),
+                // Tile layer - dark style (CartoDB)
+                const DarkMapTileLayer(),
 
                 // Polyline da rota
                 if (_pontosRota.isNotEmpty)
